@@ -1,0 +1,61 @@
+# OTel Collector — receives OTLP from langgraph-app, fans out to Tempo + Loki.
+# Metrics from instrumented services are scraped by Prometheus directly,
+# but we also forward collector self-metrics to Prometheus.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+  # Best-effort PII redaction on log/trace attributes — never log raw PII (S3).
+  attributes/redact:
+    actions:
+      - key: http.request.body
+        action: delete
+      - key: db.statement
+        action: hash
+
+exporters:
+  # Forward traces to Tempo via OTLP HTTP
+  otlphttp/tempo:
+    endpoint: http://tempo:4318
+    tls:
+      insecure: true
+
+  # Forward logs to Loki via the loki exporter (built into otelcol-contrib)
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+
+  # Self-metrics
+  prometheus:
+    endpoint: 0.0.0.0:8889
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  telemetry:
+    metrics:
+      address: 0.0.0.0:8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [attributes/redact, batch]
+      exporters: [otlphttp/tempo]
+    logs:
+      receivers: [otlp]
+      processors: [attributes/redact, batch]
+      exporters: [loki]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]

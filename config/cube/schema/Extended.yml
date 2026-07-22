@@ -1,0 +1,221 @@
+cubes:
+  - name: DailyBalance
+    sql_table: public.daily_balance
+    description: |
+      End-of-day balance snapshot per account. Both native and pre-FX-converted
+      USD amounts. Use for time-series, trend, and period-over-period analytics.
+
+    joins:
+      - name: Account
+        sql: "{CUBE}.account_id = {Account}.account_id"
+        relationship: many_to_one
+
+    dimensions:
+      - name: balance_date
+        sql: balance_date
+        type: time
+        primary_key: true
+      - name: account_id
+        sql: account_id
+        type: string
+        primary_key: true
+        meta:
+          pii: ACCOUNT_NO
+
+    measures:
+      - name: count
+        type: count
+      - name: total_balance_usd
+        sql: balance_usd
+        type: sum
+        format: currency
+      - name: avg_balance_usd
+        sql: balance_usd
+        type: avg
+        format: currency
+
+    pre_aggregations:
+      - name: daily_total
+        type: rollup
+        measures: [total_balance_usd]
+        time_dimension: balance_date
+        granularity: day
+        partition_granularity: month
+
+  - name: FxRate
+    sql_table: public.fx_rate
+    description: Daily FX rates expressed as USD per 1 unit of currency.
+    dimensions:
+      - name: rate_date
+        sql: rate_date
+        type: time
+        primary_key: true
+      - name: currency
+        sql: currency
+        type: string
+        primary_key: true
+      - name: usd_per_unit
+        sql: usd_per_unit
+        type: number
+
+  - name: CountryRef
+    sql_table: public.country_ref
+    description: Country reference data with region and AML risk_tier.
+    dimensions:
+      - name: country_iso
+        sql: country_iso
+        type: string
+        primary_key: true
+      - name: country_name
+        sql: country_name
+        type: string
+      - name: region
+        sql: region
+        type: string
+      - name: risk_tier
+        sql: risk_tier
+        type: string
+      - name: is_fatf_grey
+        sql: is_fatf_grey
+        type: boolean
+    measures:
+      - name: count
+        type: count
+
+  - name: IndustryRef
+    sql_table: public.industry_ref
+    description: Industry reference data with sector classification.
+    dimensions:
+      - name: industry
+        sql: industry
+        type: string
+        primary_key: true
+      - name: sector
+        sql: sector
+        type: string
+      - name: naics_top
+        sql: naics_top
+        type: string
+      - name: is_esg_focus
+        sql: is_esg_focus
+        type: boolean
+    measures:
+      - name: count
+        type: count
+
+  - name: Covenant
+    sql_table: public.covenant
+    description: Financial covenants attached to credit exposures.
+    joins:
+      - name: Exposure
+        sql: "{CUBE}.exposure_id = {Exposure}.exposure_id"
+        relationship: many_to_one
+    dimensions:
+      - name: covenant_id
+        sql: covenant_id
+        type: number
+        primary_key: true
+      - name: exposure_id
+        sql: exposure_id
+        type: string
+      - name: covenant_type
+        sql: covenant_type
+        type: string
+      - name: test_freq
+        sql: test_freq
+        type: string
+      - name: last_status
+        sql: last_status
+        type: string
+      - name: last_tested
+        sql: last_tested
+        type: time
+    measures:
+      - name: count
+        type: count
+      - name: breach_count
+        type: count
+        filters:
+          - sql: "{CUBE}.last_status = 'BREACH'"
+      - name: pass_count
+        type: count
+        filters:
+          - sql: "{CUBE}.last_status = 'PASS'"
+
+  - name: Collateral
+    sql_table: public.collateral
+    description: Collateral pledged against exposures with regulatory haircut.
+    joins:
+      - name: Exposure
+        sql: "{CUBE}.exposure_id = {Exposure}.exposure_id"
+        relationship: many_to_one
+    dimensions:
+      - name: collateral_id
+        sql: collateral_id
+        type: number
+        primary_key: true
+      - name: exposure_id
+        sql: exposure_id
+        type: string
+      - name: collateral_type
+        sql: collateral_type
+        type: string
+      - name: valuation_date
+        sql: valuation_date
+        type: time
+    measures:
+      - name: count
+        type: count
+      - name: total_market_value_usd
+        sql: market_value_usd
+        type: sum
+        format: currency
+      - name: total_haircut_value_usd
+        sql: "{CUBE}.market_value_usd * (1 - {CUBE}.haircut_pct/100.0)"
+        type: sum
+        format: currency
+        description: Effective collateral after regulatory haircut.
+
+  - name: RatingHistory
+    sql_table: public.rating_history
+    description: |
+      Slowly-changing-dimension v2 history of client risk ratings.
+      effective_to IS NULL means current rating.
+    joins:
+      - name: Client
+        sql: "{CUBE}.cif_id = {Client}.cif_id"
+        relationship: many_to_one
+    dimensions:
+      - name: history_id
+        sql: history_id
+        type: number
+        primary_key: true
+      - name: cif_id
+        sql: cif_id
+        type: string
+      - name: rating
+        sql: rating
+        type: string
+      - name: effective_from
+        sql: effective_from
+        type: time
+      - name: effective_to
+        sql: effective_to
+        type: time
+      - name: change_reason
+        sql: change_reason
+        type: string
+      - name: is_current
+        sql: "{CUBE}.effective_to IS NULL"
+        type: boolean
+    measures:
+      - name: count
+        type: count
+      - name: downgrade_count
+        type: count
+        filters:
+          - sql: "{CUBE}.change_reason = 'DOWNGRADE'"
+      - name: upgrade_count
+        type: count
+        filters:
+          - sql: "{CUBE}.change_reason = 'UPGRADE'"

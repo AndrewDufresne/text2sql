@@ -1,0 +1,45 @@
+# LiteLLM gateway config — Phase 1 (DeepSeek API, see ADR-0002).
+# Phase 2 will add `azure/...` / `openai/...` deployments.
+
+model_list:
+  # Primary SQL-generation model (alias used by langgraph-app).
+  # `deepseek-chat` = DeepSeek-V3 chat endpoint, OpenAI-compatible.
+  - model_name: router/sql-gen
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_base: os.environ/DEEPSEEK_API_BASE
+      api_key: os.environ/DEEPSEEK_API_KEY
+      temperature: 0.0
+
+  # Small-and-cheap model for NL explanation. Phase 1: same model, hotter temp.
+  - model_name: router/general-small
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_base: os.environ/DEEPSEEK_API_BASE
+      api_key: os.environ/DEEPSEEK_API_KEY
+      temperature: 0.2
+
+  # Optional: DeepSeek-R1 reasoning model — useful for hard SQL.
+  # Uncomment + set langgraph routing.sql_generate.fallback when ready.
+  # - model_name: router/sql-gen-reasoner
+  #   litellm_params:
+  #     model: deepseek/deepseek-reasoner
+  #     api_base: os.environ/DEEPSEEK_API_BASE
+  #     api_key: os.environ/DEEPSEEK_API_KEY
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+  # Per-call timeout (seconds). Aligns with LangGraph LLM_TIMEOUT_S.
+  # 120s is forgiving enough for free-tier DeepSeek latency spikes while still
+  # failing fast (no retries) on a genuinely stuck upstream.
+  request_timeout: 120
+  num_retries: 0
+  # Langfuse Python SDK is pinned to v2.x in langgraph-app/pyproject.toml so
+  # it stays wire-compatible with the self-hosted ``langfuse/langfuse:2``
+  # server. LiteLLM's built-in `langfuse` callback also targets that v2 API.
+  success_callback: ["langfuse"]
+  failure_callback: ["langfuse"]
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

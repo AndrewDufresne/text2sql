@@ -1,0 +1,49 @@
+# Phase 4 — Prometheus alert rules.
+# Keep thresholds dev-friendly; tighten in production via overrides.
+
+groups:
+  - name: text2sql.slo
+    interval: 30s
+    rules:
+      - alert: Text2SqlServiceDown
+        expr: up{job="langgraph-app"} == 0
+        for: 1m
+        labels: { severity: P1 }
+        annotations:
+          summary: "langgraph-app is down"
+          runbook: "docs/runbooks/service-down.md"
+
+      - alert: Text2SqlInjectionLeak
+        # Any sustained PROMPT_INJECTION miss should be P0 in prod; here we
+        # simply alert on > 0 SQL_UNSAFE that escapes self-repair.
+        expr: increase(text2sql_security_blocks_total{reason="PROMPT_INJECTION"}[5m]) == 0
+              and increase(text2sql_requests_total{error_code="PROMPT_INJECTION"}[5m]) > 0
+        for: 5m
+        labels: { severity: P0 }
+        annotations:
+          summary: "Possible prompt-injection bypass detected"
+          runbook: "docs/runbooks/injection-leak.md"
+
+      - alert: Text2SqlP95Slow
+        expr: histogram_quantile(0.95, sum(rate(text2sql_request_latency_seconds_bucket[5m])) by (le)) > 8
+        for: 10m
+        labels: { severity: P2 }
+        annotations:
+          summary: "P95 query latency > 8s"
+          runbook: "docs/runbooks/latency.md"
+
+      - alert: Text2SqlSelfRepairSpike
+        expr: rate(text2sql_self_repair_total[10m]) > 0.2
+        for: 15m
+        labels: { severity: P2 }
+        annotations:
+          summary: "Self-repair firing > 0.2/s — model regression suspected"
+          runbook: "docs/runbooks/self-repair.md"
+
+      - alert: Text2SqlLLMErrorBurst
+        expr: increase(text2sql_llm_calls_total{outcome="error"}[5m]) > 10
+        for: 5m
+        labels: { severity: P1 }
+        annotations:
+          summary: "LiteLLM error burst (> 10 errors / 5m)"
+          runbook: "docs/runbooks/llm-errors.md"

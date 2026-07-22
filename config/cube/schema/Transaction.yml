@@ -1,0 +1,70 @@
+cubes:
+  - name: Transaction
+    sql_table: public.transaction
+    description: |
+      Account-level transaction events (PAYMENT / DRAWDOWN / REPAYMENT / FEE / INTEREST).
+      Native amount + currency; convert to USD via FxRate join on (txn_date, currency).
+      Source: postgres-cib.public.transaction (~3k rows over last 720 days).
+
+    joins:
+      - name: Account
+        sql: "{CUBE}.account_id = {Account}.account_id"
+        relationship: many_to_one
+      - name: FxRate
+        sql: "{CUBE}.txn_date = {FxRate}.rate_date AND {CUBE}.currency = {FxRate}.currency"
+        relationship: many_to_one
+
+    dimensions:
+      - name: txn_id
+        sql: txn_id
+        type: number
+        primary_key: true
+        public: true
+      - name: account_id
+        sql: account_id
+        type: string
+        meta:
+          pii: ACCOUNT_NO
+      - name: txn_type
+        sql: txn_type
+        type: string
+      - name: currency
+        sql: currency
+        type: string
+      - name: txn_date
+        sql: txn_date
+        type: time
+      - name: counterparty
+        sql: counterparty
+        type: string
+
+    measures:
+      - name: count
+        type: count
+      - name: total_amount_native
+        sql: amount_native
+        type: sum
+      - name: total_amount_usd
+        sql: "{CUBE}.amount_native * {FxRate.usd_per_unit}"
+        type: sum
+        format: currency
+        description: Sum of transaction amounts converted to USD using daily FX rate.
+      - name: drawdown_amount_usd
+        sql: "{CUBE}.amount_native * {FxRate.usd_per_unit}"
+        type: sum
+        filters:
+          - sql: "{CUBE}.txn_type = 'DRAWDOWN'"
+      - name: repayment_amount_usd
+        sql: "{CUBE}.amount_native * {FxRate.usd_per_unit}"
+        type: sum
+        filters:
+          - sql: "{CUBE}.txn_type = 'REPAYMENT'"
+
+    pre_aggregations:
+      - name: daily_by_type
+        type: rollup
+        measures: [count, total_amount_native]
+        dimensions: [txn_type, currency]
+        time_dimension: txn_date
+        granularity: day
+        partition_granularity: month

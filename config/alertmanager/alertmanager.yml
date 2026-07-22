@@ -1,0 +1,12 @@
+# Phase 4 — local dev Alertmanager. No external integrations by default.
+# Override `receivers` with Slack/Email webhooks in production.
+
+route:
+  receiver: dev-null
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: dev-null

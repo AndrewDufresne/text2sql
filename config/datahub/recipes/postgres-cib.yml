@@ -1,0 +1,72 @@
+# Ingest CIB postgres-cib (client / account / exposure) into DataHub.
+#
+# Run from the host (requires `pip install acryl-datahub[postgres]`):
+#   datahub ingest -c config/datahub/recipes/postgres-cib.yml
+#
+# Or via the helper container in Makefile target `datahub-ingest`,
+# which runs `acryldata/datahub-ingestion` on the t2sql-net network.
+#
+# Profiling intentionally OFF — postgres-cib is read-only seed data,
+# row counts are tiny, and we want fast iterative re-runs.
+
+# Required by stateful_ingestion to identify the checkpoint stream.
+pipeline_name: cib_postgres_ingestion
+
+source:
+  type: postgres
+  config:
+    host_port: postgres-cib:5432
+    database: ${PGV_DB}
+    username: ${PGV_USER}
+    password: ${PGV_PASSWORD}
+    schema_pattern:
+      allow:
+        - public
+    # Postgres source matches table_pattern against <database>.<schema>.<table>.
+    table_pattern:
+      allow:
+        # Phase 5 extended catalog
+        - cib\.public\..*
+      deny:
+        # Internal pgvector storage; not business metadata
+        - cib\.public\.schema_card
+    include_tables: true
+    include_views: true
+    profiling:
+      enabled: false
+    stateful_ingestion:
+      enabled: true
+      remove_stale_metadata: true
+
+# Tag PII columns automatically — feeds Presidio downstream consumers.
+transformers:
+  - type: simple_add_dataset_tags
+    config:
+      tag_urns:
+        - urn:li:tag:CIB
+        - urn:li:tag:Pilot
+  - type: pattern_add_dataset_schema_tags
+    config:
+      tag_pattern:
+        rules:
+          # Direct PII
+          ".*legal_name$":  ["urn:li:tag:PII", "urn:li:tag:Sensitivity-C3"]
+          ".*full_name$":   ["urn:li:tag:PII", "urn:li:tag:Sensitivity-C3"]
+          ".*email$":       ["urn:li:tag:PII", "urn:li:tag:Sensitivity-C3"]
+          ".*phone$":       ["urn:li:tag:PII", "urn:li:tag:Sensitivity-C3"]
+          ".*employee_id$": ["urn:li:tag:PII", "urn:li:tag:Sensitivity-C2"]
+          # Account-level identifiers
+          ".*account_id$":  ["urn:li:tag:PII", "urn:li:tag:Sensitivity-C2"]
+          ".*cif_id$":      ["urn:li:tag:Sensitivity-C2"]
+          ".*rm_owner$":    ["urn:li:tag:PII", "urn:li:tag:Sensitivity-C2"]
+          # Financial sensitivity
+          ".*aum_usd$":          ["urn:li:tag:Confidential"]
+          ".*notional_usd$":     ["urn:li:tag:Confidential"]
+          ".*drawn_usd$":        ["urn:li:tag:Confidential"]
+          ".*balance_usd$":      ["urn:li:tag:Confidential"]
+          ".*market_value_usd$": ["urn:li:tag:Confidential"]
+
+sink:
+  type: datahub-rest
+  config:
+    server: http://datahub-gms:8080

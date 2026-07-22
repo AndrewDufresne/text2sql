@@ -1,0 +1,96 @@
+-- Phase 2 — additional CIB tables: account + exposure (small synthetic set, no PII).
+
+CREATE TABLE IF NOT EXISTS account (
+    account_id      varchar(20)  PRIMARY KEY,
+    cif_id          varchar(16)  NOT NULL REFERENCES client(cif_id),
+    account_type    varchar(32)  NOT NULL,   -- LOAN / DEPOSIT / FX / DERIV
+    currency        char(3)      NOT NULL,
+    balance_usd     numeric(18,2) NOT NULL,
+    opened_at       date         NOT NULL,
+    is_closed       boolean      NOT NULL DEFAULT false
+);
+
+CREATE TABLE IF NOT EXISTS exposure (
+    exposure_id     varchar(20)  PRIMARY KEY,
+    cif_id          varchar(16)  NOT NULL REFERENCES client(cif_id),
+    product         varchar(32)  NOT NULL,   -- TERM_LOAN / RCF / TRADE_FIN / IRS
+    notional_usd    numeric(18,2) NOT NULL,
+    drawn_usd       numeric(18,2) NOT NULL,
+    pd_bps          integer      NOT NULL,   -- probability of default, basis points
+    booked_at       date         NOT NULL,
+    matures_at      date         NOT NULL
+);
+
+-- 30 accounts spread over the 20 clients
+INSERT INTO account (account_id, cif_id, account_type, currency, balance_usd, opened_at, is_closed) VALUES
+  ('ACC10001','CIF0000001','LOAN',   'USD',  120000000.00,'2019-04-01',false),
+  ('ACC10002','CIF0000001','DEPOSIT','USD',   30000000.00,'2019-04-01',false),
+  ('ACC10003','CIF0000002','LOAN',   'CAD',   90000000.00,'2020-07-01',false),
+  ('ACC10004','CIF0000003','FX',     'HKD',   45000000.00,'2018-02-01',false),
+  ('ACC10005','CIF0000003','LOAN',   'USD',  200000000.00,'2018-02-01',false),
+  ('ACC10006','CIF0000004','DEPOSIT','JPY',   60000000.00,'2021-10-01',false),
+  ('ACC10007','CIF0000005','LOAN',   'CHF',  500000000.00,'2017-12-01',false),
+  ('ACC10008','CIF0000005','DERIV',  'USD',  200000000.00,'2018-01-15',false),
+  ('ACC10009','CIF0000006','LOAN',   'GBP',  320000000.00,'2016-06-01',false),
+  ('ACC10010','CIF0000007','LOAN',   'USD',   25000000.00,'2022-03-01',false),
+  ('ACC10011','CIF0000008','LOAN',   'EUR',  150000000.00,'2019-11-01',false),
+  ('ACC10012','CIF0000009','LOAN',   'INR',   45000000.00,'2021-01-01',false),
+  ('ACC10013','CIF0000010','DEPOSIT','GBP',  120000000.00,'2018-09-01',false),
+  ('ACC10014','CIF0000011','LOAN',   'USD',  300000000.00,'2021-04-01',false),
+  ('ACC10015','CIF0000012','FX',     'MYR',   40000000.00,'2019-08-01',false),
+  ('ACC10016','CIF0000013','LOAN',   'CAD',   12000000.00,'2022-12-01',true),
+  ('ACC10017','CIF0000014','DEPOSIT','NOK', 1500000000.00,'2015-05-01',false),
+  ('ACC10018','CIF0000014','DERIV',  'USD',  400000000.00,'2016-01-15',false),
+  ('ACC10019','CIF0000015','LOAN',   'BRL',   80000000.00,'2020-04-01',false),
+  ('ACC10020','CIF0000016','DEPOSIT','EUR',   10000000.00,'2023-02-01',false),
+  ('ACC10021','CIF0000017','LOAN',   'AUD',    8000000.00,'2022-07-01',true),
+  ('ACC10022','CIF0000018','LOAN',   'EUR',   30000000.00,'2022-01-01',false),
+  ('ACC10023','CIF0000018','DEPOSIT','USD',   25000000.00,'2022-01-01',false),
+  ('ACC10024','CIF0000019','LOAN',   'EGP',   45000000.00,'2023-05-01',false),
+  ('ACC10025','CIF0000020','LOAN',   'ISK',   18000000.00,'2022-09-01',false),
+  ('ACC10026','CIF0000011','DEPOSIT','USD',   80000000.00,'2021-04-01',false),
+  ('ACC10027','CIF0000003','DEPOSIT','HKD',  100000000.00,'2018-02-01',false),
+  ('ACC10028','CIF0000010','LOAN',   'GBP',  150000000.00,'2018-09-01',false),
+  ('ACC10029','CIF0000006','DERIV',  'USD',  120000000.00,'2017-04-01',false),
+  ('ACC10030','CIF0000002','DEPOSIT','CAD',   25000000.00,'2020-07-01',false);
+
+-- 25 exposures
+INSERT INTO exposure (exposure_id, cif_id, product, notional_usd, drawn_usd, pd_bps, booked_at, matures_at) VALUES
+  ('EXP20001','CIF0000001','TERM_LOAN', 150000000.00,120000000.00, 35,'2019-04-01','2026-04-01'),
+  ('EXP20002','CIF0000002','RCF',        90000000.00, 30000000.00, 60,'2020-07-01','2027-07-01'),
+  ('EXP20003','CIF0000003','TRADE_FIN', 220000000.00,200000000.00, 25,'2018-02-01','2026-12-31'),
+  ('EXP20004','CIF0000004','TERM_LOAN',  60000000.00, 60000000.00,110,'2021-10-01','2028-10-01'),
+  ('EXP20005','CIF0000005','TERM_LOAN', 500000000.00,500000000.00, 10,'2017-12-01','2027-12-01'),
+  ('EXP20006','CIF0000005','IRS',       200000000.00,200000000.00, 15,'2018-01-15','2028-01-15'),
+  ('EXP20007','CIF0000006','TERM_LOAN', 320000000.00,320000000.00, 30,'2016-06-01','2026-06-01'),
+  ('EXP20008','CIF0000007','TERM_LOAN',  25000000.00, 25000000.00,250,'2022-03-01','2027-03-01'),
+  ('EXP20009','CIF0000008','TERM_LOAN', 150000000.00,150000000.00, 50,'2019-11-01','2026-11-01'),
+  ('EXP20010','CIF0000009','TERM_LOAN',  45000000.00, 45000000.00,140,'2021-01-01','2026-01-01'),
+  ('EXP20011','CIF0000010','RCF',       180000000.00,150000000.00, 40,'2018-09-01','2026-09-01'),
+  ('EXP20012','CIF0000011','TERM_LOAN', 300000000.00,300000000.00, 20,'2021-04-01','2028-04-01'),
+  ('EXP20013','CIF0000012','TERM_LOAN',  40000000.00, 40000000.00,180,'2019-08-01','2026-08-01'),
+  ('EXP20014','CIF0000013','TERM_LOAN',  12000000.00, 12000000.00,400,'2022-12-01','2025-12-01'),
+  ('EXP20015','CIF0000014','IRS',       400000000.00,400000000.00,  8,'2016-01-15','2031-01-15'),
+  ('EXP20016','CIF0000015','TRADE_FIN',  80000000.00, 80000000.00,220,'2020-04-01','2026-04-01'),
+  ('EXP20017','CIF0000016','TERM_LOAN',  10000000.00, 10000000.00,500,'2023-02-01','2026-02-01'),
+  ('EXP20018','CIF0000017','TERM_LOAN',   8000000.00,  8000000.00,650,'2022-07-01','2025-07-01'),
+  ('EXP20019','CIF0000018','TERM_LOAN',  30000000.00, 30000000.00,170,'2022-01-01','2027-01-01'),
+  ('EXP20020','CIF0000019','TERM_LOAN',  45000000.00, 45000000.00,260,'2023-05-01','2028-05-01'),
+  ('EXP20021','CIF0000020','TERM_LOAN',  18000000.00, 18000000.00,520,'2022-09-01','2025-09-01'),
+  ('EXP20022','CIF0000003','RCF',       100000000.00, 60000000.00, 35,'2018-02-01','2026-02-01'),
+  ('EXP20023','CIF0000010','TERM_LOAN', 150000000.00,150000000.00, 45,'2018-09-01','2027-09-01'),
+  ('EXP20024','CIF0000006','IRS',       120000000.00,120000000.00, 18,'2017-04-01','2027-04-01'),
+  ('EXP20025','CIF0000011','RCF',        80000000.00, 25000000.00, 25,'2021-04-01','2026-04-01');
+
+-- pgvector extension + schema-card storage (populated by langgraph-app at startup)
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE IF NOT EXISTS schema_card (
+    table_name   varchar(64) PRIMARY KEY,
+    description  text        NOT NULL,
+    columns_csv  text        NOT NULL,
+    embedding    vector(384)            -- bge-small-en-v1.5 dim
+);
+
+CREATE INDEX IF NOT EXISTS schema_card_embedding_idx
+    ON schema_card USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10);

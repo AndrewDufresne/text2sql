@@ -1,0 +1,39 @@
+# Optional Promptfoo CLI config — wraps the same Golden Set as `run_eval.py`
+# but lets analysts diff prompts side-by-side via `promptfoo eval`.
+#
+# Requires Node 18+ and `npm i -g promptfoo`.
+#
+# Usage:
+#   promptfoo eval -c tests/eval/promptfoo.yaml --no-cache
+#
+# The Python harness (`run_eval.py`) is the source of truth for CI gating;
+# this file is for local exploration only and is NOT executed by GitHub Actions.
+
+description: "text2sql Phase 3 — golden-set assertions via langgraph-app HTTP"
+
+prompts:
+  - "{{question}}"
+
+providers:
+  - id: text2sql-langgraph
+    config:
+      type: http
+      url: "${LANGGRAPH_URL:-http://localhost:8080}/api/v1/query"
+      method: POST
+      headers:
+        Content-Type: application/json
+      body: |
+        {
+          "trace_id": "{{ uuid() }}",
+          "user": {"id": "eval@bank", "role": "{{role | default('RM')}}", "business_unit": "CIB-APAC"},
+          "question": "{{question}}"
+        }
+      transformResponse: |
+        function(json) {
+          return JSON.stringify(json);
+        }
+
+# Tests are sourced from the same YAML as `run_eval.py`, transformed to
+# Promptfoo's native shape via a small JS adapter (kept inline so we don't
+# fork the source of truth).
+tests: file://tests/eval/golden_set_promptfoo.json

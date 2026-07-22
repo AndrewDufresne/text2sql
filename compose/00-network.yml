@@ -1,0 +1,6 @@
+# Shared Docker network for all text2sql services.
+# Brought up first; every other compose file declares this network as `external`.
+networks:
+  t2sql-net:
+    name: t2sql-net
+    driver: bridge

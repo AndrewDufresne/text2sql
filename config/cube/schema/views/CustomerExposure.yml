@@ -1,0 +1,28 @@
+views:
+  - name: CustomerExposure
+    description: |
+      Customer 360 view for RM dashboards: client attributes joined to
+      exposure rollups. This is the recommended entry point for the LLM
+      when the question concerns a client's overall exposure profile.
+
+    cubes:
+      - join_path: Client
+        includes:
+          - cif_id
+          - legal_name
+          - country
+          - industry
+          - rm_owner
+          - risk_rating
+          - is_active
+          - active_count
+          - total_aum_usd
+
+      - join_path: Client.Exposure
+        prefix: true
+        includes:
+          - product
+          - total_notional_usd
+          - total_drawn_usd
+          - utilisation_pct
+          - weighted_pd_bps

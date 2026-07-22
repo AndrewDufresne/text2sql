@@ -1,0 +1,135 @@
+# Application services: LangGraph FastAPI + web-ui (primary).
+# chainlit-ui is LEGACY — commented out (replaced by web-ui, Next.js 15 + React 19).
+
+networks:
+  t2sql-net:
+    external: true
+
+services:
+  langgraph-app:
+    build:
+      context: ../src/services/langgraph-app
+      dockerfile: Dockerfile
+    image: t2sql/langgraph-app:dev
+    container_name: t2sql-langgraph
+    restart: unless-stopped
+    networks: [t2sql-net]
+    depends_on:
+      litellm:
+        condition: service_healthy
+      trino:
+        condition: service_healthy
+      langfuse:
+        condition: service_healthy
+      presidio-analyzer:
+        condition: service_healthy
+      presidio-anonymizer:
+        condition: service_healthy
+      tei-embed:
+        condition: service_healthy
+      opa:
+        condition: service_healthy
+      postgres-cib:
+        condition: service_healthy
+      postgres-platform:
+        condition: service_healthy
+    environment:
+      LANGGRAPH_LOG_LEVEL: ${LANGGRAPH_LOG_LEVEL:-INFO}
+      LITELLM_BASE_URL: http://litellm:4000
+      LITELLM_API_KEY: ${LITELLM_MASTER_KEY}
+      LITELLM_MODEL: router/sql-gen
+      TRINO_HOST: trino
+      TRINO_PORT: 8080
+      TRINO_CATALOG: cib
+      TRINO_SCHEMA: public
+      LANGFUSE_HOST: ${LANGFUSE_HOST}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      # ---- Phase 2 ----
+      PRESIDIO_ANALYZER_URL: http://presidio-analyzer:3000
+      PRESIDIO_ANONYMIZER_URL: http://presidio-anonymizer:3000
+      PII_ENABLED: "true"
+      OPA_URL: http://opa:8181
+      OPA_ENABLED: "true"
+      TEI_URL: http://tei-embed:80
+      PGV_DSN: postgresql://${PGV_USER}:${PGV_PASSWORD}@postgres-cib:5432/${PGV_DB}
+      CHAT_STORE_DSN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-platform:5432/${POSTGRES_DB}
+      SCHEMA_LINK_ENABLED: "true"
+      SELF_REPAIR_MAX: "1"
+      LLM_TIMEOUT_S: "120"
+      APP_VERSION: ${APP_VERSION:-1.0.0-rc1}
+      # ---- Phase 3 ----
+      OUTPUT_MASK_ENABLED: ${OUTPUT_MASK_ENABLED:-true}
+      EXPLAIN_ENABLED: ${EXPLAIN_ENABLED:-true}
+      LITELLM_EXPLAIN_MODEL: ${LITELLM_EXPLAIN_MODEL:-router/sql-gen}
+      EXPLAIN_MAX_TOKENS: ${EXPLAIN_MAX_TOKENS:-180}
+      ARGILLA_ENABLED: ${ARGILLA_ENABLED:-false}
+      ARGILLA_URL: ${ARGILLA_URL:-http://argilla:6900}
+      ARGILLA_API_KEY: ${ARGILLA_API_KEY:-owner.apikey}
+      ARGILLA_WORKSPACE: ${ARGILLA_WORKSPACE:-admin}
+      ARGILLA_DATASET: ${ARGILLA_DATASET:-text2sql-feedback}
+      FEEDBACK_LOCAL_PATH: ${FEEDBACK_LOCAL_PATH:-/tmp/text2sql-feedback.jsonl}
+      # ---- Phase 4 (observability) ----
+      # Empty -> OTel SDK no-op (safe when 70-observability.yml not running).
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    ports:
+      - "${LANGGRAPH_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8080/healthz').status==200 else sys.exit(1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  # ── chainlit-ui — LEGACY (replaced by web-ui, keep config for reference) ─
+  # chainlit-ui:
+  #   build:
+  #     context: ../src/services/chainlit-ui
+  #     dockerfile: Dockerfile
+  #   image: t2sql/chainlit-ui:dev
+  #   container_name: t2sql-chainlit
+  #   restart: unless-stopped
+  #   networks: [t2sql-net]
+  #   labels:
+  #     surface: legacy
+  #     replaces-by: web-ui
+  #   depends_on:
+  #     langgraph-app:
+  #       condition: service_healthy
+  #   environment:
+  #     LANGGRAPH_URL: http://langgraph-app:8080
+  #     CHAINLIT_AUTH_SECRET: ${CHAINLIT_AUTH_SECRET}
+  #     PILOT_USER_ID: ${PILOT_USER_ID}
+  #     PILOT_USER_ROLE: ${PILOT_USER_ROLE}
+  #     PILOT_BUSINESS_UNIT: ${PILOT_BUSINESS_UNIT}
+  #   ports:
+  #     - "${CHAINLIT_PORT:-8000}:8000"
+
+  # Primary user-facing surface (v1.0.0-rc1+). Next.js 15 + React 19.
+  # Talks to langgraph-app via same-origin rewrites — see services/web-ui/next.config.mjs
+  web-ui:
+    build:
+      context: ../src/services/web-ui
+      dockerfile: Dockerfile
+    image: t2sql/web-ui:dev
+    container_name: t2sql-web-ui
+    restart: unless-stopped
+    networks: [t2sql-net]
+    labels:
+      surface: primary
+    depends_on:
+      langgraph-app:
+        condition: service_healthy
+    environment:
+      LANGGRAPH_URL: http://langgraph-app:8080
+      NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-1.0.0-rc1}
+      NEXT_PUBLIC_PILOT_USER_ID: ${PILOT_USER_ID}
+      NEXT_PUBLIC_PILOT_USER_ROLE: ${PILOT_USER_ROLE}
+      NEXT_PUBLIC_PILOT_BUSINESS_UNIT: ${PILOT_BUSINESS_UNIT}
+    ports:
+      - "${WEB_UI_PORT:-3030}:3030"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3030/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5

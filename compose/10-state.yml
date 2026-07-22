@@ -1,0 +1,52 @@
+# State services for Phase 1 walking skeleton.
+# Slice 1.1 needs: pg-platform (langfuse metadata) + pg-cib (Trino source data).
+# pgvector is provisioned now (cheap) but unused until Phase 2.
+
+networks:
+  t2sql-net:
+    external: true
+
+volumes:
+  pg-platform-data:
+  pg-cib-data:
+
+services:
+  postgres-platform:
+    image: postgres:16-alpine
+    container_name: t2sql-pg-platform
+    restart: unless-stopped
+    networks: [t2sql-net]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pg-platform-data:/var/lib/postgresql/data
+      - ../config/postgres-platform/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  postgres-cib:
+    image: pgvector/pgvector:pg16
+    container_name: t2sql-pg-cib
+    restart: unless-stopped
+    networks: [t2sql-net]
+    environment:
+      POSTGRES_USER: ${PGV_USER}
+      POSTGRES_PASSWORD: ${PGV_PASSWORD}
+      POSTGRES_DB: ${PGV_DB}
+    ports:
+      - "${PGV_PORT:-5433}:5432"
+    volumes:
+      - pg-cib-data:/var/lib/postgresql/data
+      - ../config/postgres-cib/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGV_USER} -d ${PGV_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20

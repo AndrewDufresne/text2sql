@@ -1,0 +1,89 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  contracts:
+    name: contract tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - working-directory: text2sql-platform/src/packages/contracts
+        run: |
+          pip install -e .
+          pip install pytest
+          pytest -v
+
+  unit:
+    name: langgraph-app unit
+    runs-on: ubuntu-latest
+    needs: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - working-directory: text2sql-platform
+        run: |
+          pip install -e src/packages/contracts
+          pip install -e "src/services/langgraph-app[dev]"
+      - working-directory: text2sql-platform/src/services/langgraph-app
+        run: pytest -m "not e2e" -v
+
+  # Phase 1 placeholders — wired now, content added per slice.
+  integration:
+    name: integration (TODO Phase 1.3)
+    runs-on: ubuntu-latest
+    steps: [{ run: "echo 'TODO: Testcontainers Trino+LiteLLM mock'" }]
+
+  e2e:
+    name: e2e walking skeleton (TODO Phase 1.2 end)
+    runs-on: ubuntu-latest
+    steps: [{ run: "echo 'TODO: docker compose up + pytest -m walking_skeleton'" }]
+
+  eval:
+    name: eval (golden set)
+    runs-on: ubuntu-latest
+    needs: unit
+    # Phase 3: requires a running langgraph-app stack. Local devs run
+    # `make eval`; CI runs only on demand or via the nightly stack-up job.
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - working-directory: text2sql-platform
+        run: |
+          pip install httpx pyyaml
+      - working-directory: text2sql-platform
+        env:
+          LANGGRAPH_URL: ${{ secrets.LANGGRAPH_URL || 'http://localhost:8080' }}
+        run: python tests/eval/run_eval.py --golden tests/eval/golden_set.yaml --report tests/eval/report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-report
+          path: text2sql-platform/tests/eval/report.json
+
+  security:
+    name: security red team
+    runs-on: ubuntu-latest
+    needs: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - working-directory: text2sql-platform
+        run: |
+          pip install -e src/packages/contracts
+          pip install -e "src/services/langgraph-app[dev]"
+      - working-directory: text2sql-platform/src/services/langgraph-app
+        run: pytest -m "not e2e" tests/unit/test_security_redteam.py -v
+
+  observability:
+    name: observability checks (TODO Phase 4)
+    runs-on: ubuntu-latest
+    steps: [{ run: "echo 'TODO: trace completeness + metric exposition'" }]

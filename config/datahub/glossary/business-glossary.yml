@@ -1,0 +1,197 @@
+# CIB Business Glossary — seed for DataHub.
+# Maintained by Data Governance; loaded via `datahub ingest -c recipes/glossary.yml`.
+# Phase 5: expanded from 7 → 35+ terms covering credit risk, AML, time-series,
+# FX conversion, covenants and collateral.
+
+version: "1"
+source: CIB Pilot Glossary
+owners:
+  users: [datahub]
+url: "https://internal.bank/glossary/cib"
+
+nodes:
+  - name: CIB
+    description: Corporate & Institutional Banking pilot terms.
+    terms:
+      # ---- Client / Portfolio ----
+      - name: Active Client
+        description: Client with is_active = true on `public.client`.
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Client.active_count
+          physical_column: public.client.is_active
+      - name: AUM
+        description: Assets Under Management, USD. Single-currency snapshot.
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Client.total_aum_usd
+          physical_column: public.client.aum_usd
+      - name: Average AUM
+        description: Mean AUM across the active client base.
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Client.avg_aum_usd
+      - name: Client Count by Region
+        description: Number of clients grouped by country_ref.region.
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Client.count
+          physical_column: public.country_ref.region
+      - name: ESG-Focus Industry
+        description: Industries flagged is_esg_focus=true (Energy/Mining/Utilities/Forestry/Agriculture/Chemicals/Automotive).
+        term_source: INTERNAL
+        custom_properties:
+          physical_column: public.industry_ref.is_esg_focus
+
+      # ---- Credit / Exposure ----
+      - name: Exposure
+        description: Total committed credit exposure (USD notional).
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Exposure.total_notional_usd
+          physical_column: public.exposure.notional_usd
+      - name: Drawn Amount
+        description: Outstanding drawn portion of an exposure (USD).
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Exposure.total_drawn_usd
+          physical_column: public.exposure.drawn_usd
+      - name: Undrawn Amount
+        description: Notional minus drawn = available headroom.
+        term_source: INTERNAL
+      - name: Utilisation
+        description: Drawn divided by notional, percent.
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Exposure.utilisation_pct
+      - name: Weighted PD
+        description: Notional-weighted average probability of default (basis points).
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Exposure.weighted_pd_bps
+          physical_column: public.exposure.pd_bps
+      - name: Term Loan
+        description: Bullet/amortising loan with fixed maturity. product='TERM_LOAN'.
+        term_source: INTERNAL
+      - name: Revolving Credit Facility
+        description: Committed line that may be drawn/repaid repeatedly. product='RCF'.
+        term_source: INTERNAL
+      - name: Trade Finance
+        description: Letters of credit and trade-related lending. product='TRADE_FIN'.
+        term_source: INTERNAL
+      - name: Interest Rate Swap
+        description: Derivative exchange of fixed/floating rate cash flows. product='IRS'.
+        term_source: INTERNAL
+      - name: Maturity Bucket
+        description: Standard residual-maturity buckets (<=1y, 1-3y, 3-5y, >5y).
+        term_source: INTERNAL
+        custom_properties:
+          physical_column: public.exposure.matures_at
+
+      # ---- Collateral ----
+      - name: Collateral Market Value
+        description: Pre-haircut market value of collateral pledged against an exposure.
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Collateral.total_market_value_usd
+          physical_column: public.collateral.market_value_usd
+      - name: Haircut
+        description: Regulatory percentage discount applied to collateral market value.
+        term_source: INTERNAL
+        custom_properties:
+          physical_column: public.collateral.haircut_pct
+      - name: Effective Collateral
+        description: market_value times (1 - haircut/100). Used for unsecured-drawn.
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Collateral.total_haircut_value_usd
+      - name: Unsecured Drawn
+        description: drawn_usd minus effective collateral. Drives unsecured-exposure reporting.
+        term_source: INTERNAL
+
+      # ---- Covenants ----
+      - name: DSCR
+        description: Debt-Service Coverage Ratio covenant. Threshold typically 1.20x.
+        term_source: INTERNAL
+        custom_properties:
+          physical_column: public.covenant.threshold
+      - name: Leverage Covenant
+        description: Net-debt over EBITDA upper bound covenant. Typically 4.00x.
+        term_source: INTERNAL
+      - name: Covenant Breach
+        description: A maintenance covenant test result of BREACH (or WAIVED counts as soft).
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Covenant.breach_count
+          physical_column: public.covenant.last_status
+
+      # ---- Ratings ----
+      - name: Risk Rating
+        description: Internal credit rating AAA..CCC. Drives PD floor and capital weight.
+        term_source: INTERNAL
+        custom_properties:
+          physical_column: public.client.risk_rating
+      - name: Investment Grade
+        description: Ratings AAA, AA, A, BBB. Distinct from sub-investment-grade (BB and below).
+        term_source: INTERNAL
+      - name: Rating Downgrade
+        description: A rating_history row with change_reason='DOWNGRADE'.
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: RatingHistory.downgrade_count
+          physical_column: public.rating_history.change_reason
+      - name: Watchlist
+        description: Client placed under enhanced surveillance. change_reason='WATCHLIST'.
+        term_source: INTERNAL
+
+      # ---- AML / Country Risk ----
+      - name: FATF Grey List
+        description: Country flagged is_fatf_grey=true under FATF monitoring.
+        term_source: INTERNAL
+        custom_properties:
+          physical_column: public.country_ref.is_fatf_grey
+      - name: High-Risk Country
+        description: country_ref.risk_tier IN ('HIGH','SANCT'). Triggers EDD review.
+        term_source: INTERNAL
+        custom_properties:
+          physical_column: public.country_ref.risk_tier
+      - name: Region
+        description: Geographic region (APAC/EMEA/NAM/LATAM) from country_ref.region.
+        term_source: INTERNAL
+        custom_properties:
+          physical_column: public.country_ref.region
+
+      # ---- Operations / Time-series ----
+      - name: Daily Balance USD
+        description: End-of-day per-account balance pre-converted to USD. Use for trends.
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: DailyBalance.total_balance_usd
+          physical_column: public.daily_balance.balance_usd
+      - name: Drawdown Volume
+        description: Sum of DRAWDOWN transactions in USD over period.
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Transaction.drawdown_amount_usd
+      - name: Repayment Volume
+        description: Sum of REPAYMENT transactions in USD over period.
+        term_source: INTERNAL
+        custom_properties:
+          cube_measure: Transaction.repayment_amount_usd
+      - name: FX Rate
+        description: Spot rate USD per 1 unit of foreign currency on a given date.
+        term_source: INTERNAL
+        custom_properties:
+          physical_column: public.fx_rate.usd_per_unit
+
+      # ---- People ----
+      - name: RM Owner
+        description: Email of the Relationship Manager assigned to a client.
+        term_source: INTERNAL
+        custom_properties:
+          physical_column: public.client.rm_owner
+      - name: Business Unit
+        description: Coverage business unit (CIB-APAC / CIB-EMEA / CIB-NAM).
+        term_source: INTERNAL
+        custom_properties:
+          physical_column: public.rm_user.business_unit

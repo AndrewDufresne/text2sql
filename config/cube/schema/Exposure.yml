@@ -1,0 +1,65 @@
+cubes:
+  - name: Exposure
+    sql_table: public.exposure
+    description: |
+      Credit exposures by product (TERM_LOAN/RCF/TRADE_FIN/IRS).
+      pd_bps = probability of default in basis points.
+
+    joins:
+      - name: Client
+        sql: "{CUBE}.cif_id = {Client}.cif_id"
+        relationship: many_to_one
+
+    dimensions:
+      - name: exposure_id
+        sql: exposure_id
+        type: string
+        primary_key: true
+        public: true
+
+      - name: cif_id
+        sql: cif_id
+        type: string
+
+      - name: product
+        sql: product
+        type: string
+
+      - name: pd_bps
+        sql: pd_bps
+        type: number
+        description: Probability of default (basis points).
+
+      - name: booked_at
+        sql: booked_at
+        type: time
+
+      - name: matures_at
+        sql: matures_at
+        type: time
+
+    measures:
+      - name: count
+        type: count
+
+      - name: total_notional_usd
+        sql: notional_usd
+        type: sum
+        format: currency
+        description: Total committed exposure (USD notional).
+
+      - name: total_drawn_usd
+        sql: drawn_usd
+        type: sum
+        format: currency
+        description: Total drawn amount (USD).
+
+      - name: utilisation_pct
+        sql: "100.0 * SUM({CUBE}.drawn_usd) / NULLIF(SUM({CUBE}.notional_usd), 0)"
+        type: number
+        description: Drawn / notional, percent.
+
+      - name: weighted_pd_bps
+        sql: "SUM({CUBE}.pd_bps * {CUBE}.notional_usd) / NULLIF(SUM({CUBE}.notional_usd), 0)"
+        type: number
+        description: Notional-weighted average PD (bps).

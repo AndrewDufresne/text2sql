@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "compose: up-min (Phase 1 walking skeleton)",
+      "type": "shell",
+      "command": "docker compose --env-file .env -f compose/00-network.yml -f compose/10-state.yml -f compose/20-platform.yml -f compose/30-data.yml -f compose/50-app.yml up -d",
+      "options": { "cwd": "${workspaceFolder}/text2sql-platform" },
+      "problemMatcher": []
+    },
+    {
+      "label": "compose: down-min",
+      "type": "shell",
+      "command": "docker compose --env-file .env -f compose/00-network.yml -f compose/10-state.yml -f compose/20-platform.yml -f compose/30-data.yml -f compose/50-app.yml down",
+      "options": { "cwd": "${workspaceFolder}/text2sql-platform" },
+      "problemMatcher": []
+    },
+    {
+      "label": "compose: ps",
+      "type": "shell",
+      "command": "docker compose --env-file .env -f compose/00-network.yml -f compose/10-state.yml -f compose/20-platform.yml -f compose/30-data.yml -f compose/50-app.yml ps",
+      "options": { "cwd": "${workspaceFolder}/text2sql-platform" },
+      "problemMatcher": []
+    },
+    {
+      "label": "compose: logs (follow)",
+      "type": "shell",
+      "command": "docker compose --env-file .env -f compose/00-network.yml -f compose/10-state.yml -f compose/20-platform.yml -f compose/30-data.yml -f compose/50-app.yml logs -f --tail=100",
+      "options": { "cwd": "${workspaceFolder}/text2sql-platform" },
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "test: contracts + langgraph unit",
+      "type": "shell",
+      "command": "python -m pytest src/packages/contracts/tests src/services/langgraph-app/tests/unit -v",
+      "options": { "cwd": "${workspaceFolder}/text2sql-platform" },
+      "problemMatcher": []
+    },
+    {
+      "label": "test: walking skeleton E2E",
+      "type": "shell",
+      "command": "python -m pytest tests/e2e -m walking_skeleton -v",
+      "options": { "cwd": "${workspaceFolder}/text2sql-platform" },
+      "problemMatcher": []
+    }
+  ]
+}

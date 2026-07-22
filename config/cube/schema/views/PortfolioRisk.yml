@@ -1,0 +1,38 @@
+views:
+  - name: PortfolioRisk
+    description: |
+      Risk-officer view: client + exposure + collateral + rating + country.
+      Drives the credit-risk dashboard (industry/region heatmaps, breaches,
+      unsecured-drawn, weighted PD).
+    cubes:
+      - join_path: Client
+        includes:
+          - cif_id
+          - legal_name
+          - country
+          - industry
+          - risk_rating
+          - is_active
+          - active_count
+          - total_aum_usd
+      - join_path: Client.Exposure
+        prefix: true
+        includes:
+          - product
+          - notional_usd
+          - drawn_usd
+          - pd_bps
+          - matures_at
+          - total_notional_usd
+          - total_drawn_usd
+          - utilisation_pct
+          - weighted_pd_bps
+      - join_path: CountryRef
+        includes:
+          - region
+          - risk_tier
+          - is_fatf_grey
+      - join_path: IndustryRef
+        includes:
+          - sector
+          - is_esg_focus

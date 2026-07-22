@@ -1,0 +1,58 @@
+cubes:
+  - name: Account
+    sql_table: public.account
+    description: |
+      Customer accounts (LOAN/DEPOSIT/FX/DERIV). Joins to Client via cif_id.
+
+    joins:
+      - name: Client
+        sql: "{CUBE}.cif_id = {Client}.cif_id"
+        relationship: many_to_one
+
+    dimensions:
+      - name: account_id
+        sql: account_id
+        type: string
+        primary_key: true
+        public: true
+        meta:
+          pii: ACCOUNT_NO
+
+      - name: cif_id
+        sql: cif_id
+        type: string
+
+      - name: account_type
+        sql: account_type
+        type: string
+
+      - name: currency
+        sql: currency
+        type: string
+
+      - name: is_closed
+        sql: is_closed
+        type: boolean
+
+      - name: opened_at
+        sql: opened_at
+        type: time
+
+    measures:
+      - name: count
+        type: count
+
+      - name: open_count
+        type: count
+        filters:
+          - sql: "{CUBE}.is_closed = false"
+
+      - name: total_balance_usd
+        sql: balance_usd
+        type: sum
+        format: currency
+
+      - name: avg_balance_usd
+        sql: balance_usd
+        type: avg
+        format: currency

@@ -1,0 +1,51 @@
+# Ingest Trino metadata into DataHub.
+# Trino sits on top of postgres-cib via the `cib` catalog (see config/trino/catalog/).
+# Adding the Trino source produces SAME-platform datasets PLUS lineage edges
+# back to the postgres datasets ingested by `postgres-cib.yml` — so the UI
+# shows: query (Trino) → physical (Postgres) → BI consumer (Cube/LangGraph).
+#
+# Run with the helper container (Makefile target `datahub-ingest-trino`):
+#   docker run --rm --network t2sql-net --env-file .env \
+#     -v $PWD/config/datahub:/config/datahub:ro \
+#     acryldata/datahub-ingestion:v0.13.3 \
+#     ingest -c /config/datahub/recipes/trino.yml
+
+pipeline_name: cib_trino_ingestion
+
+source:
+  type: trino
+  config:
+    host_port: trino:8080
+    database: cib              # default catalog
+    username: ingest@bank      # any non-empty user — Trino has no auth in dev
+    schema_pattern:
+      allow:
+        - public
+    table_pattern:
+      allow:
+        - cib\.public\..*
+      deny:
+        - cib\.public\.schema_card
+    # Cross-platform lineage: connect Trino views/queries back to postgres datasets.
+    ingest_lineage_to_connectors: true
+    catalog_to_connector_details:
+      cib:
+        connector_platform: postgres
+        platform_instance: postgres-cib
+    profiling:
+      enabled: false
+    stateful_ingestion:
+      enabled: true
+      remove_stale_metadata: true
+
+transformers:
+  - type: simple_add_dataset_tags
+    config:
+      tag_urns:
+        - urn:li:tag:CIB
+        - urn:li:tag:QueryLayer
+
+sink:
+  type: datahub-rest
+  config:
+    server: http://datahub-gms:8080

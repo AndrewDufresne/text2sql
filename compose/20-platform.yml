@@ -1,0 +1,73 @@
+# Platform services for Phase 1: LiteLLM + Langfuse.
+# LLM provider = DeepSeek API (see ADR-0002). No local model container in Phase 1.
+# Phase 2+ adds: opa, otel-collector, mlflow.
+
+networks:
+  t2sql-net:
+    external: true
+
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: t2sql-litellm
+    restart: unless-stopped
+    networks: [t2sql-net]
+    depends_on:
+      postgres-platform:
+        condition: service_healthy
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      LITELLM_LOG: ${LITELLM_LOG:-INFO}
+      # Required for Admin UI (user/key/team mgmt). API works without it.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-platform:5432/litellm
+      STORE_MODEL_IN_DB: "True"
+      UI_USERNAME: ${LITELLM_UI_USERNAME:-admin}
+      UI_PASSWORD: ${LITELLM_UI_PASSWORD:-${LITELLM_MASTER_KEY}}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      DEEPSEEK_API_BASE: ${DEEPSEEK_API_BASE:-https://api.deepseek.com}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_HOST: ${LANGFUSE_HOST}
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    volumes:
+      - ../config/litellm/config.yaml:/app/config.yaml:ro
+    ports:
+      - "${LITELLM_PORT:-4000}:4000"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:4000/health/liveliness').status==200 else sys.exit(1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Pinned to v2 for Phase 1: v3 requires ClickHouse + Redis + S3 (out of scope).
+  # Phase 2+ will migrate to v3 alongside the wider observability stack.
+  langfuse:
+    image: langfuse/langfuse:2
+    container_name: t2sql-langfuse
+    restart: unless-stopped
+    networks: [t2sql-net]
+    depends_on:
+      postgres-platform:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-platform:5432/${POSTGRES_DB}
+      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET}
+      SALT: ${LANGFUSE_SALT}
+      ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY}
+      NEXTAUTH_URL: http://localhost:${LANGFUSE_PORT:-3000}
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_INIT_ORG_ID: t2sql
+      LANGFUSE_INIT_PROJECT_ID: text2sql
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_INIT_USER_EMAIL: admin@t2sql.local
+      LANGFUSE_INIT_USER_PASSWORD: admin_dev_only
+      # Force Next.js to bind on 0.0.0.0 so the in-container healthcheck can hit localhost:3000
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "${LANGFUSE_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/public/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 20

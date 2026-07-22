@@ -1,0 +1,20 @@
+# Seed Business Glossary terms for the CIB pilot.
+#
+# Apply with:
+#   datahub put --urn urn:li:glossaryNode:CIB ...
+# Or load via:
+#   datahub ingest -c config/datahub/recipes/glossary.yml
+#
+# Each term maps a Chinese/English business phrase to a Cube measure or
+# physical column. The pgvector `datahub_loader` (Phase 6) will pull
+# these into schema_card so the LLM can resolve user phrasing.
+
+pipeline_name: cib_business_glossary
+source:
+  type: datahub-business-glossary
+  config:
+    file: /config/datahub/glossary/business-glossary.yml
+sink:
+  type: datahub-rest
+  config:
+    server: http://datahub-gms:8080

@@ -1,0 +1,75 @@
+cubes:
+  - name: Client
+    sql_table: public.client
+    description: |
+      CIB customer master. One row per legal entity.
+      Source: postgres-cib.public.client (synthetic seed, 20 rows).
+
+    joins:
+      - name: Account
+        sql: "{CUBE}.cif_id = {Account}.cif_id"
+        relationship: one_to_many
+      - name: Exposure
+        sql: "{CUBE}.cif_id = {Exposure}.cif_id"
+        relationship: one_to_many
+
+    dimensions:
+      - name: cif_id
+        sql: cif_id
+        type: string
+        primary_key: true
+        public: true
+
+      - name: legal_name
+        sql: legal_name
+        type: string
+        meta:
+          pii: NAME
+
+      - name: country
+        sql: country_iso
+        type: string
+
+      - name: industry
+        sql: industry
+        type: string
+
+      - name: rm_owner
+        sql: rm_owner
+        type: string
+        description: Email of the Relationship Manager.
+
+      - name: risk_rating
+        sql: risk_rating
+        type: string
+        description: Internal credit rating (AAA..CCC).
+
+      - name: is_active
+        sql: is_active
+        type: boolean
+
+      - name: onboarded_at
+        sql: onboarded_at
+        type: time
+
+    measures:
+      - name: count
+        type: count
+        description: Number of clients.
+
+      - name: active_count
+        type: count
+        filters:
+          - sql: "{CUBE}.is_active = true"
+        description: Number of active clients.
+
+      - name: total_aum_usd
+        sql: aum_usd
+        type: sum
+        format: currency
+        description: Total Assets Under Management (USD).
+
+      - name: avg_aum_usd
+        sql: aum_usd
+        type: avg
+        format: currency

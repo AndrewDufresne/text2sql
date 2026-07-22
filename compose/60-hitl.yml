@@ -1,0 +1,51 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Phase 3 — HITL: Argilla quickstart — NOT IN DEFAULT STACK.
+# ═══════════════════════════════════════════════════════════════════════════
+# Start manually:  make up-hitl   or   docker compose -f compose/60-hitl.yml up -d
+# Default UI:      http://localhost:6900
+# API key:         owner.apikey  (default username "owner")
+# ----------------------------------------------------------------------------
+# Argilla is disabled by default in langgraph-app (ARGILLA_ENABLED=false).
+# Feedback falls back to local JSONL when Argilla is not running.
+# Override via env: ARGILLA_API_KEY / ARGILLA_OWNER_PASSWORD
+#
+# IMPORTANT: bring this file up explicitly with the rest of the stack:
+#   docker compose -f compose/00-network.yml -f ... -f compose/60-hitl.yml up -d
+# The langgraph-app service stays usable when this is down (sink falls back
+# to local JSONL).
+
+networks:
+  t2sql-net:
+    external: true
+
+services:
+  argilla:
+    image: argilla/argilla-quickstart:latest
+    container_name: t2sql-argilla
+    restart: unless-stopped
+    networks: [t2sql-net]
+    environment:
+      OWNER_USERNAME: ${ARGILLA_OWNER_USERNAME:-owner}
+      OWNER_PASSWORD: ${ARGILLA_OWNER_PASSWORD:-12345678}
+      OWNER_API_KEY: ${ARGILLA_API_KEY:-owner.apikey}
+      ADMIN_USERNAME: ${ARGILLA_ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ARGILLA_ADMIN_PASSWORD:-12345678}
+      ADMIN_API_KEY: ${ARGILLA_ADMIN_API_KEY:-admin.apikey}
+      ANNOTATOR_USERNAME: ${ARGILLA_ANNOTATOR_USERNAME:-argilla}
+      ANNOTATOR_PASSWORD: ${ARGILLA_ANNOTATOR_PASSWORD:-12345678}
+      ARGILLA_ELASTICSEARCH: http://localhost:9200
+    ports:
+      - "${ARGILLA_PORT:-6900}:6900"
+    volumes:
+      - argilla-data:/var/lib/elasticsearch
+      - argilla-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:6900/api/_status || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+
+volumes:
+  argilla-data:
+  argilla-pg:

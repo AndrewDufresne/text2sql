@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ----- design tokens (linear.app-inspired, mostly grayscale) -------------- */
+@layer base {
+  :root {
+    --bg: 255 255 255;
+    --bg-subtle: 250 250 250;
+    --bg-muted: 244 244 245;
+    --fg: 24 24 27;
+    --fg-muted: 82 82 91;
+    --fg-subtle: 113 113 122;
+    --border: 228 228 231;
+    --accent: 79 70 229;       /* indigo-600 */
+    --accent-fg: 255 255 255;
+    --success: 22 163 74;
+    --warn: 217 119 6;
+    --danger: 220 38 38;
+  }
+  .dark {
+    --bg: 9 9 11;
+    --bg-subtle: 17 17 19;
+    --bg-muted: 24 24 27;
+    --fg: 244 244 245;
+    --fg-muted: 161 161 170;
+    --fg-subtle: 113 113 122;
+    --border: 39 39 42;
+    --accent: 129 140 248;     /* indigo-400 */
+    --accent-fg: 9 9 11;
+    --success: 34 197 94;
+    --warn: 245 158 11;
+    --danger: 248 113 113;
+  }
+  html, body {
+    @apply bg-bg text-fg;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  ::selection {
+    background-color: rgb(var(--accent) / 0.25);
+  }
+}
+
+/* Subtle, professional scrollbars */
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgb(var(--border));
+    border-radius: 9999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--fg-subtle) / 0.5);
+  }
+}
+
+/* Markdown prose ------------------------------------------------------------ */
+.prose-app {
+  @apply text-[15px] leading-7 text-fg;
+}
+.prose-app p { @apply my-2; }
+.prose-app code {
+  @apply rounded bg-bg-muted px-1.5 py-0.5 text-[0.92em] font-mono;
+}
+.prose-app pre {
+  @apply rounded-lg border border-border bg-bg-subtle p-3 my-3 overflow-x-auto text-sm font-mono;
+}
+.prose-app a { @apply text-accent underline underline-offset-2; }
+.prose-app ul { @apply list-disc pl-6 my-2; }
+.prose-app ol { @apply list-decimal pl-6 my-2; }
+.prose-app strong { @apply font-semibold; }
+
+/* Result table ------------------------------------------------------------- */
+.result-table {
+  @apply w-full text-sm border-collapse;
+}
+.result-table th {
+  @apply text-left font-medium text-fg-muted bg-bg-subtle px-3 py-2 border-b border-border whitespace-nowrap;
+}
+.result-table td {
+  @apply px-3 py-2 border-b border-border align-top;
+}
+.result-table tr:hover td { @apply bg-bg-subtle/60; }

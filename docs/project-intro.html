@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="title">Text2SQL Platform — 企业级自然语言数据查询平台</title>
+<style>
+/* ============================================================
+   Design Tokens (dataviz-aware palette)
+   ============================================================ */
+:root {
+  /* Background hierarchy */
+  --bg-root: #0d1117;
+  --bg-surface: #161b22;
+  --bg-elevated: #1c2129;
+  --bg-overlay: #21262d;
+  /* Text hierarchy */
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  /* Accent palette — data-aware categorical */
+  --accent-blue: #58a6ff;
+  --accent-green: #3fb950;
+  --accent-amber: #d29922;
+  --accent-red: #f85149;
+  --accent-purple: #a371f7;
+  --accent-teal: #39d5b8;
+  --accent-orange: #f0883e;
+  --accent-pink: #db61a2;
+  /* Semantic tokens */
+  --brand: var(--accent-blue);
+  --success: var(--accent-green);
+  --warning: var(--accent-amber);
+  --danger: var(--accent-red);
+  --info: var(--accent-teal);
+  /* Borders */
+  --border-subtle: #21262d;
+  --border-default: #30363d;
+  --border-strong: #484f58;
+  /* Misc */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow: 0 4px 24px rgba(0,0,0,.4);
+  --font-mono: 'Cascadia Code','JetBrains Mono','Fira Code',Consolas,monospace;
+}
+
+[data-theme="light"] {
+  --bg-root: #f6f8fa;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f0f2f5;
+  --bg-overlay: #e8eaed;
+  --text-primary: #1f2328;
+  --text-secondary: #656d76;
+  --text-muted: #8b949e;
+  --border-subtle: #d0d7de;
+  --border-default: #afb8c1;
+  --border-strong: #8c959f;
+  --shadow: 0 4px 24px rgba(0,0,0,.08);
+}
+
+/* ============================================================
+   Reset & Base
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:16px}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  background:var(--bg-root);
+  color:var(--text-primary);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Nav */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:var(--bg-surface);
+  border-bottom:1px solid var(--border-subtle);
+  backdrop-filter:blur(12px);
+  padding:0 1.5rem;
+  display:flex;align-items:center;justify-content:space-between;
+  height:56px;gap:1rem;
+}
+nav .logo{font-weight:700;font-size:1.05rem;color:var(--brand);display:flex;align-items:center;gap:8px;white-space:nowrap}
+nav .logo svg{width:22px;height:22px;flex-shrink:0}
+nav .links{display:flex;gap:1.2rem;list-style:none;flex-wrap:wrap}
+nav .links a{
+  color:var(--text-secondary);text-decoration:none;font-size:.82rem;
+  transition:color .15s;white-space:nowrap;
+}
+nav .links a:hover{color:var(--text-primary)}
+nav .nav-actions{display:flex;gap:8px;align-items:center}
+nav .lang-btn, nav .theme-btn{
+  background:var(--bg-elevated);border:1px solid var(--border-default);
+  color:var(--text-secondary);padding:5px 10px;border-radius:var(--radius-sm);
+  cursor:pointer;font-size:.78rem;transition:all .15s;white-space:nowrap;
+}
+nav .lang-btn:hover, nav .theme-btn:hover{color:var(--text-primary);border-color:var(--border-strong)}
+nav .lang-btn.active{color:var(--brand);border-color:var(--brand);background:var(--bg-overlay)}
+
+/* Hero */
+.hero{
+  padding:5rem 2rem 4rem;
+  text-align:center;
+  background:linear-gradient(180deg,var(--bg-surface) 0%,var(--bg-root) 100%);
+  border-bottom:1px solid var(--border-subtle);
+}
+.hero .badge{
+  display:inline-block;padding:4px 14px;border-radius:20px;
+  background:var(--bg-overlay);border:1px solid var(--border-default);
+  color:var(--accent-green);font-size:.8rem;font-weight:600;
+  margin-bottom:1.5rem;
+}
+.hero h1{
+  font-size:clamp(2rem,5vw,3.2rem);font-weight:800;
+  background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin-bottom:1rem;line-height:1.2;
+}
+.hero .subtitle{
+  font-size:1.15rem;color:var(--text-secondary);max-width:720px;
+  margin:0 auto 2rem;
+}
+.hero .stats-row{
+  display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;
+  margin-top:2rem;
+}
+.hero .stat-item{
+  background:var(--bg-surface);border:1px solid var(--border-subtle);
+  border-radius:var(--radius-md);padding:1.2rem 1.8rem;
+  text-align:center;min-width:120px;
+}
+.hero .stat-item .num{
+  font-size:1.8rem;font-weight:800;color:var(--brand);
+  font-family:var(--font-mono);
+}
+.hero .stat-item .label{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+
+/* Sections */
+section{padding:4rem 2rem;max-width:1200px;margin:0 auto}
+section h2{
+  font-size:1.6rem;font-weight:700;margin-bottom:.4rem;
+  display:flex;align-items:center;gap:10px;
+}
+section h2 .icon{font-size:1.4rem}
+section .section-desc{color:var(--text-secondary);margin-bottom:2rem;font-size:.95rem}
+
+/* Architecture Grid */
+.arch-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:1rem;
+}
+.arch-card{
+  background:var(--bg-surface);border:1px solid var(--border-subtle);
+  border-radius:var(--radius-md);padding:1.4rem;
+  transition:border-color .2s,transform .2s;
+}
+.arch-card:hover{border-color:var(--border-default);transform:translateY(-2px)}
+.arch-card .layer-badge{
+  display:inline-block;padding:2px 10px;border-radius:20px;
+  font-size:.7rem;font-weight:700;margin-bottom:.6rem;
+}
+.arch-card h3{font-size:1rem;margin-bottom:.4rem}
+.arch-card .services{color:var(--text-secondary);font-size:.85rem;line-height:1.7}
+.arch-card .port{color:var(--text-muted);font-size:.75rem;margin-top:.6rem;font-family:var(--font-mono)}
+
+.layer-L0{ border-left:3px solid var(--accent-teal) }  .layer-L0 .layer-badge{background:#39d5b820;color:var(--accent-teal)}
+.layer-L1{ border-left:3px solid var(--accent-blue) }  .layer-L1 .layer-badge{background:#58a6ff20;color:var(--accent-blue)}
+.layer-L2{ border-left:3px solid var(--accent-orange)}  .layer-L2 .layer-badge{background:#f0883e20;color:var(--accent-orange)}
+.layer-L3{ border-left:3px solid var(--accent-amber)}  .layer-L3 .layer-badge{background:#d2992220;color:var(--accent-amber)}
+.layer-L4{ border-left:3px solid var(--accent-purple)} .layer-L4 .layer-badge{background:#a371f720;color:var(--accent-purple)}
+.layer-L5{ border-left:3px solid var(--accent-red) }    .layer-L5 .layer-badge{background:#f8514920;color:var(--accent-red)}
+.layer-L6{ border-left:3px solid var(--accent-pink) }   .layer-L6 .layer-badge{background:#db61a220;color:var(--accent-pink)}
+.layer-L7{ border-left:3px solid var(--accent-green)}   .layer-L7 .layer-badge{background:#3fb95020;color:var(--accent-green)}
+
+/* Pipeline */
+.pipeline-flow{
+  display:flex;gap:0;align-items:stretch;
+  overflow-x:auto;padding:1.5rem 0;
+  scrollbar-width:thin;scrollbar-color:var(--border-default) transparent;
+}
+.pipeline-node{
+  flex:0 0 auto;min-width:150px;
+  background:var(--bg-surface);border:1px solid var(--border-subtle);
+  border-radius:var(--radius-md);padding:1.2rem 1rem;
+  text-align:center;position:relative;
+}
+.pipeline-node .node-icon{font-size:1.8rem;margin-bottom:.4rem}
+.pipeline-node .node-name{font-weight:700;font-size:.85rem;margin-bottom:.2rem}
+.pipeline-node .node-desc{font-size:.72rem;color:var(--text-muted);line-height:1.5}
+.pipeline-arrow{
+  flex:0 0 auto;display:flex;align-items:center;
+  color:var(--text-muted);font-size:1.2rem;padding:0 4px;
+}
+.pipeline-note{text-align:center;margin-top:-0.5rem;font-size:.8rem;color:var(--text-muted)}
+
+/* Contracts Table */
+.contracts-table{
+  width:100%;border-collapse:collapse;font-size:.85rem;
+  background:var(--bg-surface);border:1px solid var(--border-subtle);
+  border-radius:var(--radius-md);overflow:hidden;
+}
+.contracts-table th{
+  background:var(--bg-elevated);padding:10px 14px;text-align:left;
+  font-weight:600;color:var(--text-secondary);font-size:.75rem;
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.contracts-table td{
+  padding:8px 14px;border-top:1px solid var(--border-subtle);
+  vertical-align:top;
+}
+.contracts-table .cid{font-family:var(--font-mono);color:var(--brand);font-size:.8rem}
+.contracts-table .proto{font-family:var(--font-mono);font-size:.78rem;color:var(--accent-green)}
+.contracts-table tr:hover{background:var(--bg-elevated)}
+
+/* Phase Timeline */
+.timeline{position:relative;padding-left:2rem}
+.timeline::before{
+  content:'';position:absolute;left:8px;top:0;bottom:0;
+  width:2px;background:var(--border-default);
+}
+.timeline-item{
+  position:relative;margin-bottom:2rem;padding-left:1.5rem;
+}
+.timeline-item::before{
+  content:'';position:absolute;left:-1.65rem;top:6px;
+  width:14px;height:14px;border-radius:50%;
+  border:2px solid var(--border-default);background:var(--bg-root);
+}
+.timeline-item.done::before{background:var(--success);border-color:var(--success)}
+.timeline-item h4{font-size:1.05rem;margin-bottom:.3rem;display:flex;align-items:center;gap:8px}
+.timeline-item .phase-badge{
+  padding:1px 8px;border-radius:12px;font-size:.7rem;font-weight:700;
+  background:var(--accent-green);color:#000;
+}
+.timeline-item .checks{list-style:none;margin-top:.4rem}
+.timeline-item .checks li{font-size:.82rem;color:var(--text-secondary);padding:2px 0}
+.timeline-item .checks li::before{content:'✅ ';margin-right:4px}
+
+/* Security & Tech Grid */
+.security-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:1rem;
+}
+.security-card{
+  background:var(--bg-surface);border:1px solid var(--border-subtle);
+  border-radius:var(--radius-md);padding:1.2rem;
+}
+.security-card .s-id{
+  font-family:var(--font-mono);font-size:.7rem;color:var(--brand);
+  margin-bottom:.4rem;
+}
+.security-card h4{font-size:.9rem;margin-bottom:.3rem}
+.security-card p{font-size:.8rem;color:var(--text-secondary)}
+
+/* SLO Metrics */
+.metrics-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:1rem;
+}
+.metric-card{
+  background:var(--bg-surface);border:1px solid var(--border-subtle);
+  border-radius:var(--radius-md);padding:1.2rem;text-align:center;
+}
+.metric-card .metric-name{font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+.metric-card .metric-value{font-size:2rem;font-weight:800;margin:.3rem 0}
+.metric-card .metric-target{font-size:.75rem;color:var(--text-secondary)}
+.metric-ok{color:var(--success)}
+.metric-warn{color:var(--warning)}
+.metric-critical{color:var(--danger)}
+
+/* Service Topology */
+.topo-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:.75rem;
+}
+.topo-row{
+  display:flex;align-items:center;gap:1rem;
+  background:var(--bg-surface);border:1px solid var(--border-subtle);
+  border-radius:var(--radius-sm);padding:.8rem 1rem;
+  font-size:.85rem;
+}
+.topo-row .status-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+}
+.status-healthy{background:var(--success)}
+.status-starting{background:var(--warning)}
+.topo-row .name{font-weight:600;min-width:120px}
+.topo-row .port{color:var(--text-muted);font-family:var(--font-mono);font-size:.78rem;margin-left:auto}
+
+/* Footer */
+footer{
+  text-align:center;padding:3rem 2rem;
+  color:var(--text-muted);font-size:.8rem;
+  border-top:1px solid var(--border-subtle);
+}
+footer a{color:var(--brand);text-decoration:none}
+
+/* Responsive */
+@media (max-width:900px){
+  nav .links{gap:.7rem}
+  nav .links a{font-size:.75rem}
+}
+@media (max-width:768px){
+  nav .links{display:none}
+  nav{padding:0 1rem}
+  section{padding:2.5rem 1rem}
+  .hero{padding:3rem 1rem}
+  .hero .stats-row{gap:1rem}
+  .hero .stat-item{min-width:90px;padding:.8rem 1rem}
+  .hero .stat-item .num{font-size:1.4rem}
+  .contracts-table{font-size:.72rem}
+  .pipeline-flow{flex-wrap:nowrap}
+  .arch-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+    </svg>
+    Text2SQL Platform
+  </div>
+  <ul class="links">
+    <li><a href="#architecture" data-i18n="nav.arch">架构</a></li>
+    <li><a href="#pipeline" data-i18n="nav.pipeline">管道</a></li>
+    <li><a href="#contracts" data-i18n="nav.contracts">契约</a></li>
+    <li><a href="#phases" data-i18n="nav.phases">阶段</a></li>
+    <li><a href="#security" data-i18n="nav.security">安全</a></li>
+    <li><a href="#topology" data-i18n="nav.topology">拓扑</a></li>
+  </ul>
+  <div class="nav-actions">
+    <button class="lang-btn active" data-lang="zh" onclick="setLang('zh')" aria-label="中文">中文</button>
+    <button class="lang-btn" data-lang="en" onclick="setLang('en')" aria-label="English">EN</button>
+    <button class="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">☀️ / 🌙</button>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="badge" data-i18n="hero.badge">Phase 4 — Observability & Operability ✅</div>
+  <h1 data-i18n="hero.title">企业级 Text-to-SQL 平台</h1>
+  <p class="subtitle" data-i18n="hero.desc">
+    让 RM、风险、合规、运营、Finance 等角色用<strong>自然语言</strong>安全、准确、可审计地查询 CIB 数据。基于 DeepSeek API 驱动，8 层架构，7 节点管道，13 个微服务协同工作。
+  </p>
+  <div class="stats-row">
+    <div class="stat-item"><div class="num">13</div><div class="label" data-i18n="hero.stat1">微服务容器</div></div>
+    <div class="stat-item"><div class="num">7</div><div class="label" data-i18n="hero.stat2">管道节点</div></div>
+    <div class="stat-item"><div class="num">8</div><div class="label" data-i18n="hero.stat3">架构层级</div></div>
+    <div class="stat-item"><div class="num">15</div><div class="label" data-i18n="hero.stat4">I/O 契约</div></div>
+    <div class="stat-item"><div class="num">120+</div><div class="label" data-i18n="hero.stat5">自动化测试</div></div>
+    <div class="stat-item"><div class="num">100%</div><div class="label" data-i18n="hero.stat6">注入拦截率</div></div>
+  </div>
+</header>
+
+<!-- Architecture -->
+<section id="architecture">
+  <h2><span class="icon">🏗️</span> <span data-i18n="arch.title">八层架构</span></h2>
+  <p class="section-desc" data-i18n="arch.desc">从基础设施治理到最终用户体验，每层独立可替换，通过显式契约暴露能力。</p>
+  <div class="arch-grid">
+    <div class="arch-card layer-L7">
+      <span class="layer-badge">L7</span>
+      <h3 data-i18n="arch.l7.name">体验层 Experience</h3>
+      <div class="services" data-i18n="arch.l7.svc">Chainlit (Web Chat) · Web UI (Next.js 15 + React 19)</div>
+      <div class="port">🖥️ Port 8000 · 3030</div>
+    </div>
+    <div class="arch-card layer-L6">
+      <span class="layer-badge">L6</span>
+      <h3 data-i18n="arch.l6.name">HITL 层 Human-in-the-Loop</h3>
+      <div class="services" data-i18n="arch.l6.svc">Argilla — 澄清 / 审批 / 反馈 / Golden Set 标注闭环</div>
+      <div class="port">🖥️ Port 6900</div>
+    </div>
+    <div class="arch-card layer-L5">
+      <span class="layer-badge">L5</span>
+      <h3 data-i18n="arch.l5.name">编排层 Orchestration</h3>
+      <div class="services" data-i18n="arch.l5.svc">LangGraph App (FastAPI) — 7 节点状态机 + Self-Repair Loop</div>
+      <div class="port">🖥️ Port 8080 · /metrics 9100</div>
+    </div>
+    <div class="arch-card layer-L4">
+      <span class="layer-badge">L4</span>
+      <h3 data-i18n="arch.l4.name">能力层 Capability</h3>
+      <div class="services" data-i18n="arch.l4.svc">LiteLLM Gateway · TEI (嵌入) · Presidio (PII) · sqlglot (AST 校验)</div>
+      <div class="port">🖥️ Port 4000 · 8082 · 5001/5002</div>
+    </div>
+    <div class="arch-card layer-L3">
+      <span class="layer-badge">L3</span>
+      <h3 data-i18n="arch.l3.name">知识层 Knowledge</h3>
+      <div class="services" data-i18n="arch.l3.svc">Cube (语义层) · DataHub (目录/术语/血缘) · pgvector (向量检索)</div>
+      <div class="port">🖥️ Port 4040 · 9002 · 5433</div>
+    </div>
+    <div class="arch-card layer-L2">
+      <span class="layer-badge">L2</span>
+      <h3 data-i18n="arch.l2.name">执行层 Execution</h3>
+      <div class="services" data-i18n="arch.l2.svc">Trino — 只读副本 + 用户身份穿透 (X-Trino-User) + 资源配额</div>
+      <div class="port">🖥️ Port 8081</div>
+    </div>
+    <div class="arch-card layer-L1">
+      <span class="layer-badge">L1</span>
+      <h3 data-i18n="arch.l1.name">平台层 Platform</h3>
+      <div class="services" data-i18n="arch.l1.svc">Langfuse (Trace/Prompt/Eval) · OPA (策略) · OTel Collector · MLflow</div>
+      <div class="port">🖥️ Port 3000 · 8181 · 4317/4318</div>
+    </div>
+    <div class="arch-card layer-L0">
+      <span class="layer-badge">L0</span>
+      <h3 data-i18n="arch.l0.name">治理层 Governance</h3>
+      <div class="services" data-i18n="arch.l0.svc">Prometheus · Grafana · Loki · Tempo · Alertmanager · Portainer · Backstage (P4)</div>
+      <div class="port">🖥️ Port 9090 · 3001 · 3100 · 3200 · 9000</div>
+    </div>
+  </div>
+</section>
+
+<!-- Pipeline -->
+<section id="pipeline">
+  <h2><span class="icon">⚡</span> <span data-i18n="pipe.title">查询处理管道</span></h2>
+  <p class="section-desc" data-i18n="pipe.desc">用户自然语言问题经过 7 个节点处理，包含安全护栏、Schema 链接、SQL 生成与校验、授权、执行、解释和脱敏。</p>
+  <div class="pipeline-flow">
+    <div class="pipeline-node ok"><div class="node-icon">🛡️</div><div class="node-name">pii_guard</div><div class="node-desc" data-i18n="pipe.pii">PII 检测<br>注入拦截</div></div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node ok"><div class="node-icon">🔗</div><div class="node-name">schema_link</div><div class="node-desc" data-i18n="pipe.link">pgvector + TEI<br>Top-K 检索</div></div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node ok"><div class="node-icon">🤖</div><div class="node-name">sql_generate</div><div class="node-desc" data-i18n="pipe.gen">LiteLLM → DeepSeek<br>RAG 增强 Prompt</div></div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node ok"><div class="node-icon">✅</div><div class="node-name">sql_validate</div><div class="node-desc" data-i18n="pipe.val">sqlglot AST<br>白名单校验</div></div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node ok"><div class="node-icon">🔐</div><div class="node-name">opa_check</div><div class="node-desc" data-i18n="pipe.opa">Rego 策略<br>表级授权</div></div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node ok"><div class="node-icon">⚙️</div><div class="node-name">execute</div><div class="node-desc" data-i18n="pipe.exec">Trino 查询<br>身份穿透</div></div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node ok"><div class="node-icon">💬</div><div class="node-name">explain</div><div class="node-desc" data-i18n="pipe.expl">NL 解释<br>LLM 生成</div></div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node ok"><div class="node-icon">🔏</div><div class="node-name">output_mask</div><div class="node-desc" data-i18n="pipe.mask">Presidio 出口<br>PII 脱敏</div></div>
+  </div>
+  <div class="pipeline-note" data-i18n="pipe.note">
+    🔄 <strong>Self-Repair Loop</strong>: sql_validate 失败 → 自动重试 sql_generate (最多 1 次) &nbsp;|&nbsp; 全程携带 trace_id (UUIDv7)，Langfuse 记录每个 span
+  </div>
+</section>
+
+<!-- Contracts -->
+<section id="contracts">
+  <h2><span class="icon">📋</span> <span data-i18n="ctr.title">跨层 I/O 契约 (15 项)</span></h2>
+  <p class="section-desc" data-i18n="ctr.desc">所有跨进程边界必须有 schema + 版本号 + trace_id。契约优先 (Contract-first)，Pydantic v2 + JSON Schema + OpenAPI。</p>
+  <div style="overflow-x:auto">
+  <table class="contracts-table">
+    <thead>
+      <tr><th>ID</th><th data-i18n="ctr.th.boundary">边界</th><th data-i18n="ctr.th.protocol">协议</th><th data-i18n="ctr.th.fields">关键字段</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="cid">C1</td><td>Browser → Chainlit</td><td class="proto">HTTP / WebSocket</td><td>question, session_id</td></tr>
+      <tr><td class="cid">C2</td><td>Chainlit → LangGraph</td><td class="proto">HTTP POST /api/v1/query</td><td>trace_id, user_id, role, question</td></tr>
+      <tr><td class="cid">C3</td><td data-i18n="ctr.c3.boundary">LangGraph 节点间</td><td class="proto">Pydantic GraphState</td><td>trace_id, current_node, errors[], spans[]</td></tr>
+      <tr><td class="cid">C4</td><td>LangGraph → LiteLLM</td><td class="proto">OpenAI 兼容 /v1/chat/completions</td><td>+ metadata.trace_id, metadata.session_id</td></tr>
+      <tr><td class="cid">C5</td><td>LangGraph → TEI</td><td class="proto">HTTP /embed, /rerank</td><td>inputs[], query, texts[]</td></tr>
+      <tr><td class="cid">C6</td><td>LangGraph → Presidio</td><td class="proto">HTTP /analyze, /anonymize</td><td>text, language, entities[]</td></tr>
+      <tr><td class="cid">C7</td><td>LangGraph → Cube</td><td class="proto">HTTP /cubejs-api/v1/{meta,sql,load}</td><td>query JSON</td></tr>
+      <tr><td class="cid">C8</td><td>LangGraph → DataHub</td><td class="proto">GraphQL / OpenAPI v2</td><td data-i18n="ctr.c8.fields">urn 检索</td></tr>
+      <tr><td class="cid">C9</td><td>LangGraph → pgvector</td><td class="proto">SQL (asyncpg)</td><td data-i18n="ctr.c9.fields">embedding 检索</td></tr>
+      <tr><td class="cid">C10</td><td>LangGraph → OPA</td><td class="proto">HTTP POST /v1/data/text2sql/allow</td><td>input.{user,role,tables,ops}</td></tr>
+      <tr><td class="cid">C11</td><td>LangGraph → Trino</td><td class="proto">HTTP POST /v1/statement</td><td>+ X-Trino-User, X-Trino-Trace-Token</td></tr>
+      <tr><td class="sid">C12</td><td>LangGraph → Langfuse</td><td class="proto">SDK (HTTP)</td><td>trace + spans + generations</td></tr>
+      <tr><td class="cid">C13</td><td>LangGraph → Argilla</td><td class="proto">SDK (HTTP)</td><td>feedback record</td></tr>
+      <tr><td class="cid">C14</td><td>OTel SDK → Collector</td><td class="proto">OTLP gRPC/HTTP</td><td>spans, metrics, logs</td></tr>
+      <tr><td class="cid">C15</td><td>Prom Scrape ← /metrics</td><td class="proto">HTTP</td><td>Prometheus exposition</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- Phases -->
+<section id="phases">
+  <h2><span class="icon">📅</span> <span data-i18n="phase.title">分阶段实施路线</span></h2>
+  <p class="section-desc" data-i18n="phase.desc">四个阶段，8 周完成。每个阶段均有明确的完成标准与红线约束。</p>
+  <div class="timeline">
+    <div class="timeline-item done">
+      <h4><span class="phase-badge">P1</span> <span data-i18n="phase.p1.title">Phase 1 — 最小闭环 (W1-W2) ✅</span></h4>
+      <ul class="checks">
+        <li data-i18n="phase.p1.l1">状态服务 + LiteLLM + Langfuse + Trino + Cube + LangGraph + Chainlit + DataHub</li>
+        <li data-i18n="phase.p1.l2">1 个问题 → SQL → 结果 → trace 完整 (单表 client, DeepSeek API)</li>
+        <li data-i18n="phase.p1.l3">make smoke-trino 返回行 + Langfuse 有 trace</li>
+      </ul>
+    </div>
+    <div class="timeline-item done">
+      <h4><span class="phase-badge">P2</span> <span data-i18n="phase.p2.title">Phase 2 — RAG + 安全 (W3-W4) ✅</span></h4>
+      <ul class="checks">
+        <li data-i18n="phase.p2.l1">pgvector + TEI + Presidio + sqlglot + OPA 全量接入</li>
+        <li data-i18n="phase.p2.l2">注入拦截率 100% (24 例红队: 20 hostile + 4 legit)</li>
+        <li data-i18n="phase.p2.l3">多表 join (client × account × exposure) 端到端跑通</li>
+        <li data-i18n="phase.p2.l4">92 单测 + 5 契约测试全绿 · 8 E2E 全绿</li>
+      </ul>
+    </div>
+    <div class="timeline-item done">
+      <h4><span class="phase-badge">P3</span> <span data-i18n="phase.p3.title">Phase 3 — HITL + Eval (W5-W6) ✅</span></h4>
+      <ul class="checks">
+        <li data-i18n="phase.p3.l1">Argilla 反馈闭环 (👍/👎/修正 SQL) + Golden Set CI 门禁</li>
+        <li data-i18n="phase.p3.l2">NL 解释节点 + 出参 PII 脱敏 (Presidio)</li>
+        <li data-i18n="phase.p3.l3">Argilla schema 完整闭环: record_id=trace_id, 6 fields, 14 metadata, 1 vector</li>
+        <li data-i18n="phase.p3.l4">120 unit + contracts 全绿 · Golden Set 11 用例 · 阈值 0.90</li>
+      </ul>
+    </div>
+    <div class="timeline-item done">
+      <h4><span class="phase-badge">P4</span> <span data-i18n="phase.p4.title">Phase 4 — 可观测 + 门户 (W7-W8) ✅</span></h4>
+      <ul class="checks">
+        <li data-i18n="phase.p4.l1">LGTM 栈: Prometheus + Grafana + Loki + Tempo + Alertmanager + OTel Collector</li>
+        <li data-i18n="phase.p4.l2">6 个 text2sql_* Prometheus 指标 + 5 条 SLO 告警规则</li>
+        <li data-i18n="phase.p4.l3">Grafana 自动 provisioning 3 datasources + t2sql/ai Dashboard (9 卡片)</li>
+        <li data-i18n="phase.p4.l4">Portainer CE 容器管理 · Backstage 延后</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Security -->
+<section id="security">
+  <h2><span class="icon">🔒</span> <span data-i18n="sec.title">安全与合规 (Day 1 强制)</span></h2>
+  <p class="section-desc" data-i18n="sec.desc">从项目第一天起内置的 9 项安全控制措施。</p>
+  <div class="security-grid">
+    <div class="security-card"><div class="s-id">S1</div><h4 data-i18n="sec.s1.title">SQL 越权/破坏防护</h4><p data-i18n="sec.s1.desc">sqlglot AST 白名单 + 只读账号 + 强制 LIMIT — 任何 DDL/DML/系统函数一律拒绝</p></div>
+    <div class="security-card"><div class="s-id">S2</div><h4 data-i18n="sec.s2.title">行/列权限</h4><p data-i18n="sec.s2.desc">Trino 用户身份穿透 (X-Trino-User) + OPA Rego 策略 — RM/Risk/Compliance/Ops/Finance/Admin 六角色细粒度授权</p></div>
+    <div class="security-card"><div class="s-id">S3</div><h4 data-i18n="sec.s3.title">PII 双向外脱敏</h4><p data-i18n="sec.s3.desc">Microsoft Presidio — 入口检测 (score≥0.85 必脱敏) + 出口扫描 (结果列级策略)</p></div>
+    <div class="security-card"><div class="s-id">S4</div><h4 data-i18n="sec.s4.title">Prompt 注入防御</h4><p data-i18n="sec.s4.desc">Guardrails 规则引擎 + regex 模式匹配 — 20 hostile + 4 legit 红队用例 100% 拦截</p></div>
+    <div class="security-card"><div class="s-id">S5</div><h4 data-i18n="sec.s5.title">模型/提示版本管控</h4><p data-i18n="sec.s5.desc">Langfuse Prompt Registry + Git PR — 每个 prompt 有版本号，每次变更可追溯</p></div>
+    <div class="security-card"><div class="s-id">S6</div><h4 data-i18n="sec.s6.title">唯一出网链路</h4><p data-i18n="sec.s6.desc">仅 LiteLLM 一条出网链路至 DeepSeek API；.env 集中管理密钥</p></div>
+    <div class="security-card"><div class="s-id">S7</div><h4 data-i18n="sec.s7.title">全链路审计</h4><p data-i18n="sec.s7.desc">Langfuse (7天热) + ClickHouse 归档 + Loki — 每个请求 trace_id 端到端落盘 ≥7年</p></div>
+    <div class="security-card"><div class="s-id">S8</div><h4 data-i18n="sec.s8.title">策略即代码</h4><p data-i18n="sec.s8.desc">OPA text2sql package — Rego 策略与业务代码同仓库管理，CI 校验</p></div>
+    <div class="security-card"><div class="s-id">S9</div><h4 data-i18n="sec.s9.title">TDD 强制</h4><p data-i18n="sec.s9.desc">七层测试金字塔 — 任何 PR 必须先有失败测试再补实现，无测试 = 不合并</p></div>
+  </div>
+</section>
+
+<!-- SLOs -->
+<section id="slos">
+  <h2><span class="icon">🎯</span> <span data-i18n="slo.title">工程 SLO 目标</span></h2>
+  <p class="section-desc" data-i18n="slo.desc">关键性能与质量指标 (草案，待与业务确认)。</p>
+  <div class="metrics-grid">
+    <div class="metric-card"><div class="metric-name">Result Match (GA)</div><div class="metric-value metric-ok">≥ 95%</div><div class="metric-target" data-i18n="slo.m1">结果集等价准确率</div></div>
+    <div class="metric-card"><div class="metric-name">Schema Recall@5</div><div class="metric-value metric-ok">≥ 95%</div><div class="metric-target" data-i18n="slo.m2">Top-5 表召回率</div></div>
+    <div class="metric-card"><div class="metric-name" data-i18n="slo.m3n">拒答精确率</div><div class="metric-value metric-ok">≥ 99%</div><div class="metric-target" data-i18n="slo.m3">越权 / 无答案拒绝精度</div></div>
+    <div class="metric-card"><div class="metric-name" data-i18n="slo.m4n">注入拦截率</div><div class="metric-value metric-critical">100%</div><div class="metric-target" data-i18n="slo.m4">硬指标，不允许例外</div></div>
+    <div class="metric-card"><div class="metric-name" data-i18n="slo.m5n">P95 端到端延迟</div><div class="metric-value metric-ok">≤ 8s</div><div class="metric-target" data-i18n="slo.m5">从用户提问到返回结果</div></div>
+    <div class="metric-card"><div class="metric-name" data-i18n="slo.m6n">单查询平均成本</div><div class="metric-value metric-ok">≤ $0.02</div><div class="metric-target" data-i18n="slo.m6">云模型为主 (DeepSeek)</div></div>
+  </div>
+</section>
+
+<!-- Service Topology -->
+<section id="topology">
+  <h2><span class="icon">🐳</span> <span data-i18n="topo.title">服务拓扑 (13 容器)</span></h2>
+  <p class="section-desc" data-i18n="topo.desc">Docker Compose 分层部署，10 个 compose 文件，共享 t2sql-net 网络。</p>
+  <div class="topo-grid">
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">pg-platform</span><span data-i18n="topo.pg1">Langfuse 元数据</span><span class="port">:5432</span></div>
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">pg-cib</span><span data-i18n="topo.pg2">业务数据 + pgvector</span><span class="port">:5433</span></div>
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">litellm</span><span data-i18n="topo.llm">DeepSeek 网关</span><span class="port">:4000</span></div>
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">langfuse</span><span data-i18n="topo.lf">LLM Trace 观测</span><span class="port">:3000</span></div>
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">trino</span><span data-i18n="topo.trino">SQL 查询引擎</span><span class="port">:8081</span></div>
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">cube</span><span data-i18n="topo.cube">语义层</span><span class="port">:4040</span></div>
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">presidio-analyzer</span><span data-i18n="topo.pa">PII 检测</span><span class="port">:5001</span></div>
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">presidio-anonymizer</span><span data-i18n="topo.pan">PII 脱敏</span><span class="port">:5002</span></div>
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">tei-embed</span><span data-i18n="topo.tei">文本嵌入 (bge-small)</span><span class="port">:8082</span></div>
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">opa</span><span data-i18n="topo.opa">策略引擎</span><span class="port">:8181</span></div>
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">langgraph-app</span><span data-i18n="topo.lg">核心 API (FastAPI)</span><span class="port">:8080</span></div>
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">chainlit-ui</span><span data-i18n="topo.cl">旧版 Chat UI</span><span class="port">:8000</span></div>
+    <div class="topo-row"><span class="status-dot status-healthy"></span><span class="name">web-ui</span><span data-i18n="topo.wui">新版 UI (Next.js 15)</span><span class="port">:3030</span></div>
+  </div>
+</section>
+
+<!-- Tech Stack -->
+<section id="tech">
+  <h2><span class="icon">🛠️</span> <span data-i18n="tech.title">技术栈摘要</span></h2>
+  <p class="section-desc" data-i18n="tech.desc">核心技术选型与决策记录。</p>
+  <div class="security-grid">
+    <div class="security-card"><div class="s-id">LLM Provider</div><h4>DeepSeek API (via LiteLLM)</h4><p data-i18n="tech.llm">ADR-0002: 零 GPU 依赖，DeepSeek-V3，OpenAI 兼容协议。LiteLLM 统一路由，内置 Langfuse callback 自动记录 token + cost。</p></div>
+    <div class="security-card"><div class="s-id">Backend</div><h4>Python 3.11 + FastAPI</h4><p data-i18n="tech.be">异步全链路 (httpx, asyncpg, asyncio)。手写 pipeline (非 langgraph.StateGraph)，Pydantic v2 契约优先。</p></div>
+    <div class="security-card"><div class="s-id">Frontend</div><h4>Next.js 15 + React 19</h4><p data-i18n="tech.fe">Tailwind CSS 3.4, Lucide React icons, react-markdown。Server-side proxy 到 LangGraph，无 CORS 问题。</p></div>
+    <div class="security-card"><div class="s-id">Query Engine</div><h4>Trino 442</h4><p data-i18n="tech.qe">单节点 coordinator+worker，PostgreSQL connector。X-Trino-User 身份穿透，资源组配额管理。</p></div>
+    <div class="security-card"><div class="s-id">Vector DB</div><h4>pgvector (pg16)</h4><p data-i18n="tech.vdb">HNSW 索引，cosine 距离。schema_chunks 表存储表/列描述嵌入，支持过滤检索。</p></div>
+    <div class="security-card"><div class="s-id">Observability</div><h4>LGTM Stack</h4><p data-i18n="tech.obs">Prometheus (metrics) + Grafana (dashboards) + Loki (logs) + Tempo (traces) + OTel Collector。6 个 text2sql_* 指标, 5 条 SLO 告警。</p></div>
+  </div>
+</section>
+
+<footer>
+  <p>Text2SQL Platform · CIB Corporate & Institutional Banking · v1.0.0-rc1</p>
+  <p style="margin-top:.5rem">
+    <a href="https://github.com/anthropics/claude-code" target="_blank">Built with Claude Code</a> ·
+    LLM: DeepSeek-V3 via LiteLLM ·
+    Docs: <a href="./Architecture.md">Architecture.md</a>
+  </p>
+</footer>
+
+<!-- ============================================================
+     I18N Translation Store
+     ============================================================ -->
+<script>
+const I18N = {
+  zh: {
+    title: 'Text2SQL Platform — 企业级自然语言数据查询平台',
+    'nav.arch':'架构','nav.pipeline':'管道','nav.contracts':'契约',
+    'nav.phases':'阶段','nav.security':'安全','nav.topology':'拓扑',
+    'hero.badge':'Phase 4 — 可观测性与可运维性 ✅',
+    'hero.title':'企业级 Text-to-SQL 平台',
+    'hero.desc':'让 RM、风险、合规、运营、Finance 等角色用<strong>自然语言</strong>安全、准确、可审计地查询 CIB 数据。基于 DeepSeek API 驱动，8 层架构，7 节点管道，13 个微服务协同工作。',
+    'hero.stat1':'微服务容器','hero.stat2':'管道节点','hero.stat3':'架构层级',
+    'hero.stat4':'I/O 契约','hero.stat5':'自动化测试','hero.stat6':'注入拦截率',
+    'arch.title':'八层架构',
+    'arch.desc':'从基础设施治理到最终用户体验，每层独立可替换，通过显式契约暴露能力。',
+    'arch.l7.name':'体验层 Experience','arch.l7.svc':'Chainlit (Web Chat) · Web UI (Next.js 15 + React 19)',
+    'arch.l6.name':'HITL 层 Human-in-the-Loop','arch.l6.svc':'Argilla — 澄清 / 审批 / 反馈 / Golden Set 标注闭环',
+    'arch.l5.name':'编排层 Orchestration','arch.l5.svc':'LangGraph App (FastAPI) — 7 节点状态机 + Self-Repair Loop',
+    'arch.l4.name':'能力层 Capability','arch.l4.svc':'LiteLLM Gateway · TEI (嵌入) · Presidio (PII) · sqlglot (AST 校验)',
+    'arch.l3.name':'知识层 Knowledge','arch.l3.svc':'Cube (语义层) · DataHub (目录/术语/血缘) · pgvector (向量检索)',
+    'arch.l2.name':'执行层 Execution','arch.l2.svc':'Trino — 只读副本 + 用户身份穿透 (X-Trino-User) + 资源配额',
+    'arch.l1.name':'平台层 Platform','arch.l1.svc':'Langfuse (Trace/Prompt/Eval) · OPA (策略) · OTel Collector · MLflow',
+    'arch.l0.name':'治理层 Governance','arch.l0.svc':'Prometheus · Grafana · Loki · Tempo · Alertmanager · Portainer · Backstage (P4)',
+    'pipe.title':'查询处理管道',
+    'pipe.desc':'用户自然语言问题经过 7 个节点处理，包含安全护栏、Schema 链接、SQL 生成与校验、授权、执行、解释和脱敏。',
+    'pipe.pii':'PII 检测<br>注入拦截','pipe.link':'pgvector + TEI<br>Top-K 检索',
+    'pipe.gen':'LiteLLM → DeepSeek<br>RAG 增强 Prompt','pipe.val':'sqlglot AST<br>白名单校验',
+    'pipe.opa':'Rego 策略<br>表级授权','pipe.exec':'Trino 查询<br>身份穿透',
+    'pipe.expl':'NL 解释<br>LLM 生成','pipe.mask':'Presidio 出口<br>PII 脱敏',
+    'pipe.note':'🔄 <strong>Self-Repair Loop</strong>: sql_validate 失败 → 自动重试 sql_generate (最多 1 次) &nbsp;|&nbsp; 全程携带 trace_id (UUIDv7)，Langfuse 记录每个 span',
+    'ctr.title':'跨层 I/O 契约 (15 项)',
+    'ctr.desc':'所有跨进程边界必须有 schema + 版本号 + trace_id。契约优先 (Contract-first)，Pydantic v2 + JSON Schema + OpenAPI。',
+    'ctr.th.boundary':'边界','ctr.th.protocol':'协议','ctr.th.fields':'关键字段',
+    'ctr.c3.boundary':'LangGraph 节点间','ctr.c8.fields':'urn 检索','ctr.c9.fields':'embedding 检索',
+    'phase.title':'分阶段实施路线','phase.desc':'四个阶段，8 周完成。每个阶段均有明确的完成标准与红线约束。',
+    'phase.p1.title':'Phase 1 — 最小闭环 (W1-W2) ✅',
+    'phase.p1.l1':'状态服务 + LiteLLM + Langfuse + Trino + Cube + LangGraph + Chainlit + DataHub',
+    'phase.p1.l2':'1 个问题 → SQL → 结果 → trace 完整 (单表 client, DeepSeek API)',
+    'phase.p1.l3':'make smoke-trino 返回行 + Langfuse 有 trace',
+    'phase.p2.title':'Phase 2 — RAG + 安全 (W3-W4) ✅',
+    'phase.p2.l1':'pgvector + TEI + Presidio + sqlglot + OPA 全量接入',
+    'phase.p2.l2':'注入拦截率 100% (24 例红队: 20 hostile + 4 legit)',
+    'phase.p2.l3':'多表 join (client × account × exposure) 端到端跑通',
+    'phase.p2.l4':'92 单测 + 5 契约测试全绿 · 8 E2E 全绿',
+    'phase.p3.title':'Phase 3 — HITL + Eval (W5-W6) ✅',
+    'phase.p3.l1':'Argilla 反馈闭环 (👍/👎/修正 SQL) + Golden Set CI 门禁',
+    'phase.p3.l2':'NL 解释节点 + 出参 PII 脱敏 (Presidio)',
+    'phase.p3.l3':'Argilla schema 完整闭环: record_id=trace_id, 6 fields, 14 metadata, 1 vector',
+    'phase.p3.l4':'120 unit + contracts 全绿 · Golden Set 11 用例 · 阈值 0.90',
+    'phase.p4.title':'Phase 4 — 可观测 + 门户 (W7-W8) ✅',
+    'phase.p4.l1':'LGTM 栈: Prometheus + Grafana + Loki + Tempo + Alertmanager + OTel Collector',
+    'phase.p4.l2':'6 个 text2sql_* Prometheus 指标 + 5 条 SLO 告警规则',
+    'phase.p4.l3':'Grafana 自动 provisioning 3 datasources + t2sql/ai Dashboard (9 卡片)',
+    'phase.p4.l4':'Portainer CE 容器管理 · Backstage 延后',
+    'sec.title':'安全与合规 (Day 1 强制)','sec.desc':'从项目第一天起内置的 9 项安全控制措施。',
+    'sec.s1.title':'SQL 越权/破坏防护','sec.s1.desc':'sqlglot AST 白名单 + 只读账号 + 强制 LIMIT — 任何 DDL/DML/系统函数一律拒绝',
+    'sec.s2.title':'行/列权限','sec.s2.desc':'Trino 用户身份穿透 (X-Trino-User) + OPA Rego 策略 — RM/Risk/Compliance/Ops/Finance/Admin 六角色细粒度授权',
+    'sec.s3.title':'PII 双向脱敏','sec.s3.desc':'Microsoft Presidio — 入口检测 (score≥0.85 必脱敏) + 出口扫描 (结果列级策略)',
+    'sec.s4.title':'Prompt 注入防御','sec.s4.desc':'Guardrails 规则引擎 + regex 模式匹配 — 20 hostile + 4 legit 红队用例 100% 拦截',
+    'sec.s5.title':'模型/提示版本管控','sec.s5.desc':'Langfuse Prompt Registry + Git PR — 每个 prompt 有版本号，每次变更可追溯',
+    'sec.s6.title':'唯一出网链路','sec.s6.desc':'仅 LiteLLM 一条出网链路至 DeepSeek API；.env 集中管理密钥',
+    'sec.s7.title':'全链路审计','sec.s7.desc':'Langfuse (7天热) + ClickHouse 归档 + Loki — 每个请求 trace_id 端到端落盘 ≥7年',
+    'sec.s8.title':'策略即代码','sec.s8.desc':'OPA text2sql package — Rego 策略与业务代码同仓库管理，CI 校验',
+    'sec.s9.title':'TDD 强制','sec.s9.desc':'七层测试金字塔 — 任何 PR 必须先有失败测试再补实现，无测试 = 不合并',
+    'slo.title':'工程 SLO 目标','slo.desc':'关键性能与质量指标 (草案，待与业务确认)。',
+    'slo.m1':'结果集等价准确率','slo.m2':'Top-5 表召回率',
+    'slo.m3n':'拒答精确率','slo.m3':'越权 / 无答案拒绝精度',
+    'slo.m4n':'注入拦截率','slo.m4':'硬指标，不允许例外',
+    'slo.m5n':'P95 端到端延迟','slo.m5':'从用户提问到返回结果',
+    'slo.m6n':'单查询平均成本','slo.m6':'云模型为主 (DeepSeek)',
+    'topo.title':'服务拓扑 (13 容器)','topo.desc':'Docker Compose 分层部署，10 个 compose 文件，共享 t2sql-net 网络。',
+    'topo.pg1':'Langfuse 元数据','topo.pg2':'业务数据 + pgvector',
+    'topo.llm':'DeepSeek 网关','topo.lf':'LLM Trace 观测','topo.trino':'SQL 查询引擎',
+    'topo.cube':'语义层','topo.pa':'PII 检测','topo.pan':'PII 脱敏',
+    'topo.tei':'文本嵌入 (bge-small)','topo.opa':'策略引擎',
+    'topo.lg':'核心 API (FastAPI)','topo.cl':'旧版 Chat UI','topo.wui':'新版 UI (Next.js 15)',
+    'tech.title':'技术栈摘要','tech.desc':'核心技术选型与决策记录。',
+    'tech.llm':'ADR-0002: 零 GPU 依赖，DeepSeek-V3，OpenAI 兼容协议。LiteLLM 统一路由，内置 Langfuse callback 自动记录 token + cost。',
+    'tech.be':'异步全链路 (httpx, asyncpg, asyncio)。手写 pipeline (非 langgraph.StateGraph)，Pydantic v2 契约优先。',
+    'tech.fe':'Tailwind CSS 3.4, Lucide React icons, react-markdown。Server-side proxy 到 LangGraph，无 CORS 问题。',
+    'tech.qe':'单节点 coordinator+worker，PostgreSQL connector。X-Trino-User 身份穿透，资源组配额管理。',
+    'tech.vdb':'HNSW 索引，cosine 距离。schema_chunks 表存储表/列描述嵌入，支持过滤检索。',
+    'tech.obs':'Prometheus (metrics) + Grafana (dashboards) + Loki (logs) + Tempo (traces) + OTel Collector。6 个 text2sql_* 指标, 5 条 SLO 告警。'
+  },
+  en: {
+    title: 'Text2SQL Platform — Enterprise Natural Language Data Query Platform',
+    'nav.arch':'Architecture','nav.pipeline':'Pipeline','nav.contracts':'Contracts',
+    'nav.phases':'Phases','nav.security':'Security','nav.topology':'Topology',
+    'hero.badge':'Phase 4 — Observability & Operability ✅',
+    'hero.title':'Enterprise Text-to-SQL Platform',
+    'hero.desc':'Empower <strong>RM, Risk, Compliance, Ops, and Finance</strong> roles to query CIB data <strong>in plain language</strong> — securely, accurately, and auditably. Powered by DeepSeek API, 8-layer architecture, 7-node pipeline, 13 containerized microservices.',
+    'hero.stat1':'Microservices','hero.stat2':'Pipeline Nodes','hero.stat3':'Architecture Layers',
+    'hero.stat4':'I/O Contracts','hero.stat5':'Automated Tests','hero.stat6':'Injection Block Rate',
+    'arch.title':'8-Layer Architecture',
+    'arch.desc':'From infrastructure governance to end-user experience — each layer is independently replaceable, exposing capabilities through explicit contracts.',
+    'arch.l7.name':'Experience Layer','arch.l7.svc':'Chainlit (Web Chat) · Web UI (Next.js 15 + React 19)',
+    'arch.l6.name':'HITL Layer','arch.l6.svc':'Argilla — Clarification / Approval / Feedback / Golden Set annotation loop',
+    'arch.l5.name':'Orchestration Layer','arch.l5.svc':'LangGraph App (FastAPI) — 7-node state machine + Self-Repair Loop',
+    'arch.l4.name':'Capability Layer','arch.l4.svc':'LiteLLM Gateway · TEI (Embedding) · Presidio (PII) · sqlglot (AST Validation)',
+    'arch.l3.name':'Knowledge Layer','arch.l3.svc':'Cube (Semantic Layer) · DataHub (Catalog/Glossary/Lineage) · pgvector (Vector Search)',
+    'arch.l2.name':'Execution Layer','arch.l2.svc':'Trino — Read-only replica + User identity passthrough (X-Trino-User) + Resource quotas',
+    'arch.l1.name':'Platform Layer','arch.l1.svc':'Langfuse (Trace/Prompt/Eval) · OPA (Policy) · OTel Collector · MLflow',
+    'arch.l0.name':'Governance Layer','arch.l0.svc':'Prometheus · Grafana · Loki · Tempo · Alertmanager · Portainer · Backstage (P4)',
+    'pipe.title':'Query Processing Pipeline',
+    'pipe.desc':'User natural language questions flow through 7 nodes: security guardrails, schema linking, SQL generation & validation, authorization, execution, explanation, and PII masking.',
+    'pipe.pii':'PII Detection<br>Injection Guard','pipe.link':'pgvector + TEI<br>Top-K Retrieval',
+    'pipe.gen':'LiteLLM → DeepSeek<br>RAG-Enhanced Prompt','pipe.val':'sqlglot AST<br>Allowlist Validation',
+    'pipe.opa':'Rego Policy<br>Table-Level AuthZ','pipe.exec':'Trino Query<br>Identity Passthrough',
+    'pipe.expl':'NL Explanation<br>LLM Generated','pipe.mask':'Presidio Output<br>PII Masking',
+    'pipe.note':'🔄 <strong>Self-Repair Loop</strong>: sql_validate failure → auto-retry sql_generate (max 1 retry) &nbsp;|&nbsp; trace_id (UUIDv7) carried throughout; Langfuse records every span',
+    'ctr.title':'Cross-Layer I/O Contracts (15)',
+    'ctr.desc':'Every cross-process boundary requires schema + version + trace_id. Contract-first design using Pydantic v2 + JSON Schema + OpenAPI.',
+    'ctr.th.boundary':'Boundary','ctr.th.protocol':'Protocol','ctr.th.fields':'Key Fields',
+    'ctr.c3.boundary':'LangGraph Inter-Node','ctr.c8.fields':'URN Lookup','ctr.c9.fields':'Embedding Lookup',
+    'phase.title':'Phased Implementation Roadmap','phase.desc':'Four phases over 8 weeks. Each phase has clear acceptance criteria and red-line constraints.',
+    'phase.p1.title':'Phase 1 — Walking Skeleton (W1-W2) ✅',
+    'phase.p1.l1':'State services + LiteLLM + Langfuse + Trino + Cube + LangGraph + Chainlit + DataHub',
+    'phase.p1.l2':'1 question → SQL → result → trace, end-to-end (single table: client, DeepSeek API)',
+    'phase.p1.l3':'make smoke-trino returns rows + Langfuse captures trace',
+    'phase.p2.title':'Phase 2 — RAG + Security (W3-W4) ✅',
+    'phase.p2.l1':'pgvector + TEI + Presidio + sqlglot + OPA fully integrated',
+    'phase.p2.l2':'Injection block rate 100% (24 red-team cases: 20 hostile + 4 legit)',
+    'phase.p2.l3':'Multi-table JOIN (client × account × exposure) working end-to-end',
+    'phase.p2.l4':'92 unit + 5 contract tests green · 8 E2E tests green',
+    'phase.p3.title':'Phase 3 — HITL + Eval (W5-W6) ✅',
+    'phase.p3.l1':'Argilla feedback loop (👍/👎/corrected SQL) + Golden Set CI gate',
+    'phase.p3.l2':'NL explanation node + output PII masking (Presidio)',
+    'phase.p3.l3':'Argilla schema fully closed-loop: record_id=trace_id, 6 fields, 14 metadata, 1 vector',
+    'phase.p3.l4':'120 unit + contracts green · Golden Set 11 cases · threshold 0.90',
+    'phase.p4.title':'Phase 4 — Observability + Portal (W7-W8) ✅',
+    'phase.p4.l1':'LGTM Stack: Prometheus + Grafana + Loki + Tempo + Alertmanager + OTel Collector',
+    'phase.p4.l2':'6 text2sql_* Prometheus metric series + 5 SLO alerting rules',
+    'phase.p4.l3':'Grafana auto-provisioned 3 datasources + t2sql/ai Dashboard (9 panels)',
+    'phase.p4.l4':'Portainer CE container management · Backstage deferred',
+    'sec.title':'Security & Compliance (Day 1 Mandatory)','sec.desc':'9 security controls built in from day one.',
+    'sec.s1.title':'SQL Abuse/Destruction Prevention','sec.s1.desc':'sqlglot AST allowlisting + read-only account + mandatory LIMIT — any DDL/DML/system functions are rejected outright.',
+    'sec.s2.title':'Row/Column Permissions','sec.s2.desc':'Trino user identity passthrough (X-Trino-User) + OPA Rego policies — fine-grained authorization for 6 roles: RM/Risk/Compliance/Ops/Finance/Admin.',
+    'sec.s3.title':'Bidirectional PII Masking','sec.s3.desc':'Microsoft Presidio — input detection (score≥0.85 must mask) + output scanning (column-level result policy).',
+    'sec.s4.title':'Prompt Injection Defense','sec.s4.desc':'Guardrails rule engine + regex pattern matching — 20 hostile + 4 legit red-team cases at 100% block rate.',
+    'sec.s5.title':'Model/Prompt Version Control','sec.s5.desc':'Langfuse Prompt Registry + Git PR — every prompt is versioned, every change is traceable.',
+    'sec.s6.title':'Single Outbound Path','sec.s6.desc':'Only LiteLLM has one outbound path to DeepSeek API; keys managed centrally in .env.',
+    'sec.s7.title':'Full-Chain Audit','sec.s7.desc':'Langfuse (7-day hot) + ClickHouse archive + Loki — every request trace_id retained end-to-end for ≥7 years.',
+    'sec.s8.title':'Policy as Code','sec.s8.desc':'OPA text2sql package — Rego policies co-managed with business code in the same repository; CI-validated.',
+    'sec.s9.title':'TDD Mandatory','sec.s9.desc':'Seven-layer test pyramid — every PR must have a failing test first, then implementation; no test = no merge.',
+    'slo.title':'Engineering SLO Targets','slo.desc':'Key performance and quality indicators (draft, pending business alignment).',
+    'slo.m1':'Result Set Equivalence Accuracy','slo.m2':'Top-5 Table Recall Rate',
+    'slo.m3n':'Refusal Precision','slo.m3':'Unauthorized / No-answer Refusal Precision',
+    'slo.m4n':'Injection Block Rate','slo.m4':'Hard requirement, zero exceptions',
+    'slo.m5n':'P95 End-to-End Latency','slo.m5':'From user question to response returned',
+    'slo.m6n':'Average Cost per Query','slo.m6':'Cloud model (DeepSeek)',
+    'topo.title':'Service Topology (13 Containers)','topo.desc':'Docker Compose layered deployment, 10 compose files, shared t2sql-net network.',
+    'topo.pg1':'Langfuse Metadata','topo.pg2':'Business Data + pgvector',
+    'topo.llm':'DeepSeek Gateway','topo.lf':'LLM Trace Observability','topo.trino':'SQL Query Engine',
+    'topo.cube':'Semantic Layer','topo.pa':'PII Detection','topo.pan':'PII Anonymization',
+    'topo.tei':'Text Embeddings (bge-small)','topo.opa':'Policy Engine',
+    'topo.lg':'Core API (FastAPI)','topo.cl':'Legacy Chat UI','topo.wui':'Primary UI (Next.js 15)',
+    'tech.title':'Technology Stack','tech.desc':'Core technology choices and decision records.',
+    'tech.llm':'ADR-0002: Zero GPU dependency, DeepSeek-V3, OpenAI-compatible protocol. LiteLLM unified routing with built-in Langfuse callback for automatic token + cost tracking.',
+    'tech.be':'Async full-stack (httpx, asyncpg, asyncio). Hand-rolled pipeline (not langgraph.StateGraph), Pydantic v2 contract-first.',
+    'tech.fe':'Tailwind CSS 3.4, Lucide React icons, react-markdown. Server-side proxy to LangGraph — no CORS issues in production.',
+    'tech.qe':'Single-node coordinator+worker, PostgreSQL connector. X-Trino-User identity passthrough, resource group quota management.',
+    'tech.vdb':'HNSW index, cosine distance. schema_chunks table stores table/column description embeddings with filtered retrieval.',
+    'tech.obs':'Prometheus (metrics) + Grafana (dashboards) + Loki (logs) + Tempo (traces) + OTel Collector. 6 text2sql_* metrics, 5 SLO alert rules.'
+  }
+};
+</script>
+
+<script>
+/* ============================================================
+   Theme Toggle
+   ============================================================ */
+function toggleTheme(){
+  const html=document.documentElement;
+  html.dataset.theme=html.dataset.theme==='dark'?'light':'dark';
+  localStorage.setItem('t2sql-theme',html.dataset.theme);
+}
+(function(){
+  const saved=localStorage.getItem('t2sql-theme');
+  if(saved) document.documentElement.dataset.theme=saved;
+})();
+
+/* ============================================================
+   Language Switcher
+   ============================================================ */
+let currentLang = localStorage.getItem('t2sql-lang') || 'zh';
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('t2sql-lang', lang);
+  document.documentElement.lang = lang;
+
+  // Update lang buttons
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+
+  // Update <title>
+  const titleEl = document.querySelector('title[data-i18n]');
+  if (titleEl && I18N[lang] && I18N[lang].title) {
+    document.title = I18N[lang].title;
+  }
+
+  // Walk all elements with data-i18n attribute
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (key && I18N[lang] && I18N[lang][key] !== undefined) {
+      const val = I18N[lang][key];
+      if (el.children.length > 0) {
+        el.innerHTML = val;
+      } else {
+        el.textContent = val;
+      }
+    }
+  });
+
+  // Update all <title> tags that use data-i18n
+  if (document.title !== (I18N[lang] && I18N[lang].title)) {
+    document.title = I18N[lang].title || document.title;
+  }
+}
+
+// Initialize language on page load
+(function(){
+  setLang(currentLang);
+})();
+</script>
+
+</body>
+</html>

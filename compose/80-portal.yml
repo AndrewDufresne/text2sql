@@ -1,0 +1,34 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Phase 4 — Portainer container management — NOT IN DEFAULT STACK.
+# ═══════════════════════════════════════════════════════════════════════════
+# Start manually:  make up-portal   or   docker compose -f compose/80-portal.yml up -d
+# ----------------------------------------------------------------------------
+# Backstage developer portal is intentionally deferred (heavy Node build);
+# tracked in Architecture §10 and ADR-0006.
+
+networks:
+  t2sql-net:
+    external: true
+
+volumes:
+  portainer-data:
+
+services:
+  portainer:
+    # 2.21.4 is too old for Docker Engine 29.x (API 1.52) — snapshot succeeds but
+    # full endpoint calls hit unknown routes → "environment unreachable" in UI.
+    # Pinned to 2.27 LTS which supports the newer Docker API.
+    image: portainer/portainer-ce:2.27.9-alpine
+    container_name: t2sql-portainer
+    restart: unless-stopped
+    networks: [t2sql-net]
+    # NOTE: Do NOT pass `-H unix:///var/run/docker.sock` here. Portainer 2.27
+    # misinterprets that flag as a Podman socket and the auto-registered `local`
+    # endpoint becomes type=Podman → "environment unreachable" in UI.
+    # Just bind-mount the socket; Portainer will auto-detect Docker on first run.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    ports:
+      - "${PORTAINER_PORT:-9000}:9000"
+      - "${PORTAINER_EDGE_PORT:-9001}:8000"

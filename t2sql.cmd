@@ -1,0 +1,3 @@
+@echo off
+REM Thin shim so users on cmd.exe can run `t2sql start` instead of remembering powershell -File ...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0t2sql.ps1" %*
