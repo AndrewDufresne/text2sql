@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<!--
+  Text2SQL Platform — Briefing deck (PPT-style, static React single page), ENGLISH.
+  · Fully local: React / ReactDOM / Babel are vendored under ./vendor — runs offline.
+  · How to open: double-click this file. Pure static front-end.
+  · Keys: ← → / Space to move · Home/End first/last · O contents · F fullscreen.
+  · Style: financial-business (red / white / grey · hexagon mark · restrained whitespace).
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Text2SQL Platform · Natural-Language Data Queries for Banking</title>
+<style>
+  :root{
+    --red:#DB0011; --red-dk:#A6000D; --red-soft:#fbe9ea;
+    --ink:#1a1a1a; --ink-2:#3c3c3c; --muted:#6b6b6b; --faint:#9a9a9a;
+    --paper:#ffffff; --backdrop:#e7e8ea; --wash:#f6f6f7; --wash-2:#f0f1f2;
+    --hair:#dedede; --hair-2:#cfcfcf;
+    --slate:#3f5d7a; --teal:#00817a; --ochre:#a56a00; --plum:#6c3f68; --moss:#4c6b3d; --steel:#59708a;
+    --slate-s:#eaf0f5; --teal-s:#e3f2f0; --ochre-s:#f6efe2; --plum-s:#f2eaf1; --moss-s:#eef2ea; --red-s:#fbe9ea;
+    --mono:'Cascadia Code','JetBrains Mono','Consolas','SFMono-Regular',monospace;
+    --sans:'Helvetica Neue','Segoe UI',Arial,'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans); color:var(--ink); background:var(--backdrop);
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+  }
+  #root{height:100vh;width:100vw}
+
+  /* ---------- deck shell ---------- */
+  .backdrop{
+    position:fixed;inset:0;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #f2f3f4 0%, var(--backdrop) 60%);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .topbar{position:fixed;top:0;left:0;right:0;height:4px;z-index:60;background:#d3d4d6}
+  .topbar > i{display:block;height:100%;background:var(--red);transition:width .35s cubic-bezier(.4,0,.2,1)}
+
+  .stage{
+    position:absolute;top:50%;left:50%;
+    width:1280px;height:720px;transform-origin:center center;
+    background:var(--paper);
+    box-shadow:0 24px 70px rgba(20,20,25,.22), 0 3px 10px rgba(20,20,25,.10);
+    overflow:hidden;
+  }
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;animation:fade .34s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  /* content slide frame */
+  .frame{display:flex;flex-direction:column;height:100%;padding:44px 64px 0}
+  .kicker{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);font-weight:700}
+  .title{font-size:38px;line-height:1.1;font-weight:700;letter-spacing:-.01em;color:var(--ink);margin-top:8px}
+  .title .en{color:var(--faint);font-weight:600;font-size:20px;letter-spacing:0;margin-left:10px}
+  .rule{height:3px;width:64px;background:var(--red);margin:16px 0 0}
+  .body{flex:1;min-height:0;padding:26px 0 0;display:flex;flex-direction:column}
+  .foot{height:46px;flex:none;display:flex;align-items:center;justify-content:space-between;
+    border-top:1px solid var(--hair);color:var(--faint);font-size:12.5px}
+  .foot .fl{display:flex;align-items:center;gap:9px}
+  .foot .fbrand{color:var(--ink-2);font-weight:600;letter-spacing:.01em}
+  .foot .ftag{color:var(--faint)}
+  .foot .fnum{font-variant-numeric:tabular-nums;letter-spacing:.06em}
+
+  /* ---------- hexagon mark ---------- */
+  .hex{display:inline-block;vertical-align:middle}
+
+  /* ---------- primitives ---------- */
+  .row{display:flex}
+  .col{display:flex;flex-direction:column}
+  .gap8{gap:8px}.gap12{gap:12px}.gap16{gap:16px}.gap20{gap:20px}.gap24{gap:24px}
+  .grow{flex:1;min-width:0}
+  .center{align-items:center}.between{justify-content:space-between}
+
+  .card{background:var(--paper);border:1px solid var(--hair);border-radius:10px;padding:18px 20px}
+  .card.wash{background:var(--wash)}
+  .card.accent{border-left:4px solid var(--red)}
+  .card h4{font-size:17px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:9px}
+  .card p{font-size:14px;color:var(--ink-2);line-height:1.55;margin-top:7px}
+  .card .lead{font-size:14.5px;color:var(--muted)}
+
+  .chipnum{flex:none;width:26px;height:26px;border-radius:6px;background:var(--red);color:#fff;
+    font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+  .tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    padding:3px 9px;border-radius:20px;background:var(--wash-2);color:var(--ink-2);border:1px solid var(--hair)}
+  .tag.red{background:var(--red-s);color:var(--red-dk);border-color:#f2cfd2}
+  .tag.slate{background:var(--slate-s);color:var(--slate);border-color:#d5e0ea}
+  .tag.teal{background:var(--teal-s);color:var(--teal);border-color:#c9e6e2}
+  .tag.ochre{background:var(--ochre-s);color:var(--ochre);border-color:#ecdcbf}
+  .tag.plum{background:var(--plum-s);color:var(--plum);border-color:#e4cfe2}
+  .tag.moss{background:var(--moss-s);color:var(--moss);border-color:#d3e0cb}
+  .tag.ink{background:#efefef;color:var(--ink-2);border-color:var(--hair)}
+
+  .mono{font-family:var(--mono)}
+  .code{font-family:var(--mono);font-size:13.5px;line-height:1.6;color:#e8edf2;background:#1f2733;
+    border-radius:9px;padding:14px 16px;white-space:pre;overflow:hidden}
+  .code .k{color:#8fb7ff}.code .s{color:#a9e6a0}.code .c{color:#7f8a99}.code .n{color:#e6c07b}.code .f{color:#e59fce}
+
+  .li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--ink-2);line-height:1.5}
+  .li .dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--red);margin-top:7px}
+  .li b{color:var(--ink);font-weight:700}
+
+  .kv{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:6px 0;border-bottom:1px dashed var(--hair)}
+  .kv .k{color:var(--muted)}.kv .v{color:var(--ink);font-weight:600;font-family:var(--mono);font-size:12.8px}
+
+  .stat{display:flex;flex-direction:column;gap:2px}
+  .stat .n{font-size:34px;font-weight:800;letter-spacing:-.02em;color:var(--ink);line-height:1;font-variant-numeric:tabular-nums}
+  .stat .n .u{font-size:16px;font-weight:700;color:var(--muted)}
+  .stat .l{font-size:12.5px;color:var(--muted)}
+
+  /* pipeline nodes */
+  .node{border:1px solid var(--hair);border-radius:9px;background:#fff;padding:9px 11px;min-width:0;position:relative}
+  .node .nm{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ink)}
+  .node .sub{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.3}
+  .arrow{flex:none;display:flex;align-items:center;color:var(--faint);font-size:16px}
+
+  /* layer bands */
+  .band{display:flex;align-items:center;gap:14px;padding:9px 14px;border:1px solid var(--hair);border-bottom:none;background:#fff}
+  .band:last-child{border-bottom:1px solid var(--hair)}
+  .band:nth-child(even){background:var(--wash)}
+  .band.hot{background:var(--red-s);border-color:#f0cdd0}
+  .band .lx{flex:none;width:44px;height:30px;border-radius:6px;background:var(--ink);color:#fff;font-weight:800;
+    font-size:13px;display:flex;align-items:center;justify-content:center;letter-spacing:.02em}
+  .band.hot .lx{background:var(--red)}
+  .band .nm{flex:none;width:190px;font-weight:700;font-size:14px;color:var(--ink)}
+  .band .tech{flex:none;width:340px;font-size:12px;color:var(--slate);font-family:var(--mono)}
+  .band .msn{flex:1;font-size:12.5px;color:var(--muted);text-align:right}
+
+  /* viewport controls (unscaled) */
+  .ui{position:fixed;z-index:50;bottom:16px;display:flex;align-items:center;gap:8px}
+  .ui.left{left:18px}.ui.right{right:18px}
+  .btn{border:1px solid var(--hair-2);background:rgba(255,255,255,.9);backdrop-filter:blur(6px);
+    color:var(--ink-2);border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600;cursor:pointer;
+    font-family:var(--sans);display:inline-flex;align-items:center;gap:7px;transition:all .15s}
+  .btn:hover{border-color:var(--red);color:var(--red)}
+  .btn.circ{width:40px;height:40px;padding:0;justify-content:center;font-size:18px;border-radius:50%}
+  .counter{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;background:rgba(255,255,255,.85);
+    border:1px solid var(--hair);border-radius:8px;padding:8px 12px;font-weight:600;letter-spacing:.05em}
+  .langtog{display:inline-flex;border:1px solid var(--hair-2);border-radius:8px;overflow:hidden;background:rgba(255,255,255,.9);backdrop-filter:blur(6px)}
+  .langtog button{border:none;background:transparent;color:var(--muted);font-family:var(--sans);font-weight:700;font-size:12.5px;padding:8px 11px;cursor:pointer;transition:all .15s}
+  .langtog button.on{background:var(--red);color:#fff;cursor:default}
+  .langtog button:not(.on):hover{color:var(--red)}
+
+  /* overview */
+  .ov{position:fixed;inset:0;z-index:80;background:rgba(28,28,30,.72);backdrop-filter:blur(4px);
+    display:flex;flex-direction:column;padding:40px 56px;animation:fade .2s ease both}
+  .ov h3{color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;gap:12px;margin-bottom:20px}
+  .ov h3 .x{margin-left:auto;cursor:pointer;font-size:14px;color:#cfcfcf;border:1px solid #555;border-radius:6px;padding:5px 12px}
+  .ovgrid{flex:1;display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:min-content;gap:14px;overflow:auto;align-content:start}
+  .ovc{background:#fff;border-radius:8px;padding:12px;cursor:pointer;border:2px solid transparent;transition:all .15s;min-height:82px;display:flex;flex-direction:column;gap:6px}
+  .ovc:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+  .ovc.on{border-color:var(--red)}
+  .ovc .oi{font-size:11px;font-weight:800;color:var(--red);font-variant-numeric:tabular-nums}
+  .ovc .ot{font-size:13px;font-weight:700;color:var(--ink);line-height:1.25}
+  .ovc .ok{font-size:10.5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+
+  .hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:40;font-size:11.5px;color:var(--faint);
+    background:rgba(255,255,255,.7);border:1px solid var(--hair);border-radius:20px;padding:6px 14px;
+    letter-spacing:.02em;transition:opacity .4s}
+
+  /* cover */
+  .cover{height:100%;display:flex;flex-direction:column;padding:0}
+  .cover .band-top{height:8px;background:var(--red)}
+  .cover .cmain{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 84px}
+  .cover .eyebrow{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:13.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+  .cover h1{font-size:60px;line-height:1.05;font-weight:800;letter-spacing:-.02em;color:var(--ink);margin-top:22px}
+  .cover h1 .accent{color:var(--red)}
+  .cover .sub{font-size:21px;color:var(--ink-2);margin-top:20px;max-width:860px;line-height:1.45;font-weight:400}
+  .cover .meta{display:flex;gap:10px;margin-top:34px;flex-wrap:wrap}
+  .cover .cfoot{padding:20px 84px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;align-items:center;color:var(--faint);font-size:13px}
+
+  /* section divider */
+  .divider{height:100%;display:flex;flex-direction:column;justify-content:center;padding:0 84px;background:linear-gradient(120deg,#fbfbfc,#f4f5f6)}
+  .divider .dn{font-size:120px;font-weight:800;color:var(--red-soft);line-height:.9;letter-spacing:-.03em}
+  .divider h2{font-size:44px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-top:-30px}
+  .divider p{font-size:18px;color:var(--muted);margin-top:14px;max-width:720px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="./vendor/react.production.min.js"></script>
+<script src="./vendor/react-dom.production.min.js"></script>
+<script src="./vendor/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback, createContext, useContext } = React;
+
+/* ===================== shared bits ===================== */
+const Deck = createContext({ cur:0, total:0 });
+
+function Hex({ size=34 }){
+  return (
+    <span className="hex" style={{width:size,height:size}}>
+      <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
+        <polygon points="25,6.7 75,6.7 100,50 75,93.3 25,93.3 0,50" fill="#DB0011"/>
+        <polygon points="25,6.7 75,6.7 50,50" fill="#ffffff"/>
+        <polygon points="25,93.3 75,93.3 50,50" fill="#ffffff"/>
+      </svg>
+    </span>
+  );
+}
+
+const ICONS = {
+  shield:"M12 3l7 3v5c0 4.4-3 8.3-7 9.5C8 19.3 5 15.4 5 11V6l7-3z",
+  link:"M9 15l6-6M8.5 8.5l-2 2a3.5 3.5 0 105 5l2-2M15.5 15.5l2-2a3.5 3.5 0 10-5-5l-2 2",
+  code:"M8 8l-4 4 4 4M16 8l4 4-4 4M13 5l-2 14",
+  check:"M4 12l5 5L20 6",
+  db:"M12 4c4 0 7 1.1 7 2.5S16 9 12 9 5 7.9 5 6.5 8 4 12 4zM5 6.5v11C5 19 8 20 12 20s7-1 7-2.5v-11",
+  chart:"M4 20V6M4 20h16M9 20v-6M14 20v-9M19 20v-4",
+  gear:"M12 9a3 3 0 100 6 3 3 0 000-6zM19 12l1.5 1-1.2 2.9-1.8-.4-1.3 1.3.4 1.8L12 22l-1.9-1.5.4-1.8-1.3-1.3-1.8.4L6.5 15 8 14v-2l-1.5-1 1.2-2.9 1.8.4 1.3-1.3-.4-1.8L12 2l1.9 1.5-.4 1.8 1.3 1.3 1.8-.4L19 9l-1.5 1z",
+  eye:"M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7zM12 9a3 3 0 100 6 3 3 0 000-6z",
+  lock:"M6 10V7a6 6 0 1112 0v3M5 10h14v10H5z",
+  route:"M6 19a2 2 0 100-4 2 2 0 000 4zM18 9a2 2 0 100-4 2 2 0 000 4zM8 17h6a3 3 0 003-3V9",
+  filter:"M3 5h18l-7 8v5l-4 2v-7z",
+  refresh:"M20 11a8 8 0 10-2 5M20 5v6h-6",
+  spark:"M12 3l2.2 6.2L20 11l-5.8 1.8L12 19l-2.2-6.2L4 11l5.8-1.8z",
+  bolt:"M13 2L4 14h6l-1 8 9-12h-6z",
+  clock:"M12 3a9 9 0 100 18 9 9 0 000-18zM12 7.5V12l3 2"
+};
+function Icon({ name, size=20, color="var(--red)", w=1.9 }){
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke={color} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={ICONS[name]||""} />
+    </svg>
+  );
+}
+
+function Stage({ kicker, title, en, children, tone }){
+  const { cur, total } = useContext(Deck);
+  return (
+    <div className="frame">
+      <div>
+        {kicker && <div className="kicker">{kicker}</div>}
+        <div className="title">{title}{en && <span className="en">{en}</span>}</div>
+        <div className="rule" style={tone?{background:tone}:null}/>
+      </div>
+      <div className="body">{children}</div>
+      <div className="foot">
+        <div className="fl"><Hex size={17}/><span className="fbrand">Text2SQL Platform</span>
+          <span className="ftag">· CIB Data &amp; Analytics · Internal</span></div>
+        <div className="fnum">{String(cur+1).padStart(2,"0")} / {String(total).padStart(2,"0")}</div>
+      </div>
+    </div>
+  );
+}
+
+const Li = ({ children }) => <div className="li"><span className="dot"/><span>{children}</span></div>;
+
+/* ===================== slides ===================== */
+
+// 1 — Cover
+function Cover(){
+  return (
+    <div className="cover">
+      <div className="band-top"/>
+      <div className="cmain">
+        <div className="eyebrow"><Hex size={30}/> Text2SQL Platform · Enterprise Solution Briefing</div>
+        <h1>Query bank data<br/>in <span className="accent">plain language</span>. Safely.</h1>
+        <div className="sub">For RM (Relationship Manager), Risk, Compliance, Operations and Finance —
+          self-service data access that is safe, accurate, auditable, and <b>transparent at every step</b>.</div>
+        <div className="meta">
+          <span className="tag red"><Icon name="spark" size={13} color="var(--red-dk)"/> Powered by OpenAI GPT</span>
+          <span className="tag slate">8-layer architecture</span>
+          <span className="tag teal">7-step secure journey · self-repair</span>
+          <span className="tag ochre">11 containers · Docker Compose</span>
+          <span className="tag ink">115 tests passing</span>
+        </div>
+      </div>
+      <div className="cfoot">
+        <span>Start it with: <span className="mono" style={{color:"var(--ink-2)"}}>.\t2sql.ps1 start min</span></span>
+        <span>2026 · Briefing</span>
+      </div>
+    </div>
+  );
+}
+
+// 2 — Agenda
+function Agenda(){
+  const items = [
+    ["01","Business pain & value","Why — request backlog, over-access, PII (personal-data) leakage, metric drift, no audit trail","spark"],
+    ["02","Architecture & layers","What — 8-layer architecture · 11 containers · explicit contracts","gear"],
+    ["03","The full journey of a question","How — Permission → Semantics → SQL → Validation → Execution → Analysis","route"],
+    ["04","Middleware missions & transparency","Why each middleware exists, and how the whole chain stays observable","eye"],
+    ["05","Security, compliance & SLO","Hard constraints · control matrix · Service-Level Objectives (SLO)","shield"],
+  ];
+  return (
+    <Stage kicker="Agenda" title="What we will cover">
+      <div className="col gap12" style={{marginTop:4}}>
+        {items.map(([n,t,d,ic])=>(
+          <div className="card row center gap16" key={n} style={{padding:"15px 20px"}}>
+            <div className="chipnum" style={{width:34,height:34,fontSize:16,background:"var(--ink)"}}>{n}</div>
+            <Icon name={ic} size={22}/>
+            <div className="grow">
+              <div style={{fontSize:19,fontWeight:700}}>{t}</div>
+              <div style={{fontSize:13.5,color:"var(--muted)",marginTop:2}}>{d}</div>
+            </div>
+            <span className="arrow">▶</span>
+          </div>
+        ))}
+      </div>
+    </Stage>
+  );
+}
+
+// 3 — Pain points
+function Pain(){
+  const cards = [
+    ["Data-request backlog","Business files a ticket → queues behind the data team for days; analysis is gated by IT.","clock"],
+    ["Over-access risk","Who may see which clients and tables? Enforced by manual review and verbal rules — hard to audit.","lock"],
+    ["PII (personal-data) leakage","Names, account numbers and emails flow in plain SQL and results — one leak is a compliance incident.","shield"],
+    ["Metric drift","The same metric, written as different SQL (Structured Query Language) by different people — reports don't reconcile.","link"],
+    ["No audit trail","When something breaks, you can't answer who, when, with what rights, queried what.","eye"],
+  ];
+  return (
+    <Stage kicker="Why · Business pain" title="Five chronic ills of the “file-a-ticket” model">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="col gap12" style={{flex:1.15}}>
+          {cards.slice(0,3).map(([t,d,ic])=>(
+            <div className="card accent" key={t}>
+              <h4><Icon name={ic} size={19}/>{t}</h4><p>{d}</p>
+            </div>
+          ))}
+        </div>
+        <div className="col gap12" style={{flex:1.15}}>
+          {cards.slice(3).map(([t,d,ic])=>(
+            <div className="card accent" key={t}>
+              <h4><Icon name={ic} size={19}/>{t}</h4><p>{d}</p>
+            </div>
+          ))}
+          <div className="card wash" style={{background:"var(--ink)",border:"none",color:"#fff",flex:1,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+            <div style={{fontSize:14,color:"#e9c9cc",fontWeight:600,letterSpacing:".04em"}}>In one line</div>
+            <div style={{fontSize:19,fontWeight:700,marginTop:8,lineHeight:1.4}}>
+              The business wants <span style={{color:"#ff8b96"}}>answers</span> —<br/>not to learn SQL, nor to wait in a queue.</div>
+          </div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 4 — Value
+function Value(){
+  const pillars = [
+    ["Self-service","spark","Plain language → results in seconds; frees the data team from repetitive pulls."],
+    ["Security built-in","shield","Injection / over-access blocked 100% (hard target); PII masked on the way in and out."],
+    ["Trustworthy","lock","Read-only, forced row limit, identity pass-through; one trace ID per query, kept ≥ 7 years."],
+    ["Consistent","link","A semantic layer + curated schema cards fix business definitions into retrieval and prompts."],
+    ["Replaceable","gear","Each layer exposes capability via an explicit contract; any component upgrades on its own."],
+    ["Observable","eye","Langfuse trace + Prometheus metrics + Grafana dashboards — the whole process is transparent."],
+  ];
+  return (
+    <Stage kicker="Why · Value" title="From “data pulls” to a pipeline you can trust">
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginTop:2}}>
+        {pillars.map(([t,ic,d])=>(
+          <div className="card" key={t} style={{display:"flex",flexDirection:"column",gap:8}}>
+            <div className="row center gap12">
+              <div style={{width:38,height:38,borderRadius:9,background:"var(--red-s)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <Icon name={ic} size={20}/></div>
+              <div style={{fontSize:17.5,fontWeight:700}}>{t}</div>
+            </div>
+            <p style={{margin:0}}>{d}</p>
+          </div>
+        ))}
+      </div>
+      <div className="row gap24 center" style={{marginTop:18,padding:"14px 20px",background:"var(--wash)",border:"1px solid var(--hair)",borderRadius:10}}>
+        <div className="stat"><div className="n">100<span className="u">%</span></div><div className="l">Injection / over-access blocked</div></div>
+        <div style={{width:1,height:38,background:"var(--hair-2)"}}/>
+        <div className="stat"><div className="n">≤8<span className="u">s</span></div><div className="l">P95 (95th-percentile) latency target</div></div>
+        <div style={{width:1,height:38,background:"var(--hair-2)"}}/>
+        <div className="stat"><div className="n">≤$0.02</div><div className="l">Avg cost per query target</div></div>
+        <div style={{width:1,height:38,background:"var(--hair-2)"}}/>
+        <div className="stat"><div className="n">≥95<span className="u">%</span></div><div className="l">Semantic-linking recall target</div></div>
+      </div>
+    </Stage>
+  );
+}
+
+// 5 — 8-layer architecture
+function Layers(){
+  const L = [
+    ["L7","Experience","web-ui (Next.js 15 · React 19)","Plain-language chat entry · results & explanation"],
+    ["L6","HITL (Human-in-the-loop)","Argilla","Clarify / approve / feedback → Golden Set",false],
+    ["L5","Orchestration","LangGraph state machine · 8 nodes + self-repair","The whole journey is orchestrated here",true],
+    ["L4","Capability","LiteLLM · TEI · Presidio · OPA · sqlglot","Model / embed / mask / policy / validate",true],
+    ["L3","Knowledge","pgvector · Schema Cards","Turns business logic + schema into searchable semantics"],
+    ["L2","Execution","Trino 442 (over PostgreSQL)","Read-only replica + identity pass-through + quota"],
+    ["L1","Platform","Langfuse · OPA policy repo","Trace / Prompt / Eval · policy as code"],
+    ["L0","Governance","Prometheus · Grafana · Loki · Tempo · Portainer","Metrics / logs / traces / containers (optional)"],
+  ];
+  return (
+    <Stage kicker="What · Architecture" title="Eight layers, each with a single job, each replaceable">
+      <div className="col" style={{marginTop:2}}>
+        {L.map(([lx,nm,tech,msn,hot])=>(
+          <div className={"band"+(hot?" hot":"")} key={lx}>
+            <div className="lx">{lx}</div>
+            <div className="nm">{nm}</div>
+            <div className="tech">{tech}</div>
+            <div className="msn">{msn}</div>
+          </div>
+        ))}
+      </div>
+      <div className="row between center" style={{marginTop:12}}>
+        <span className="tag red">Red = the platform “brain”: orchestration + capability</span>
+        <div style={{fontSize:12.5,color:"var(--muted)"}}>Hard constraints: read-only · identity pass-through · auditable · replaceable · TDD-first</div>
+      </div>
+    </Stage>
+  );
+}
+
+// 6 — Service topology
+function Topology(){
+  const groups = [
+    ["State & data",["t2sql-pg-platform · 5432 · platform metadata","t2sql-pg-cib · 5433 · business data + pgvector","t2sql-trino · 8081 · SQL query engine"]],
+    ["Model & capability",["t2sql-litellm · 4000 · model gateway → OpenAI GPT","t2sql-tei-embed · 8082 · text embeddings (bge)","t2sql-presidio-analyzer/-anonymizer · 5001/5002 · PII (personal data)","t2sql-opa · 8181 · policy authorization"]],
+    ["App & experience",["t2sql-langgraph · 8080 · core API (Application Programming Interface, 8-node pipeline)","t2sql-web-ui · 3203 · user interface"]],
+    ["Observability (built-in / optional)",["t2sql-langfuse · 3202 · LLM (Large Language Model) trace / prompt / eval","Prometheus · Grafana · Loki · Tempo (obs stack)"]],
+  ];
+  return (
+    <Stage kicker="What · Deployment" title="Default stack: 11 containers, one command">
+      <div className="row gap12" style={{marginBottom:12,alignItems:"center"}}>
+        <div className="code" style={{padding:"10px 16px",flex:"none"}}>
+          <span className="c"># PowerShell one-liner</span>{"\n"}
+          <span className="k">.\t2sql.ps1</span> start min
+        </div>
+        <div className="grow" style={{fontSize:13.5,color:"var(--muted)"}}>
+          Layered compose: <span className="mono">00-network → 10-state → 20-platform → 30-data → 40-capability → 50-app</span>.
+          Any layer can go up / down on its own.
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+        {groups.map(([g,items])=>(
+          <div className="card wash" key={g}>
+            <h4 style={{fontSize:15}}><span style={{width:8,height:8,borderRadius:2,background:"var(--red)",display:"inline-block"}}/>{g}</h4>
+            <div className="col gap8" style={{marginTop:10}}>
+              {items.map(it=>{
+                const [name,...rest]=it.split(" · ");
+                return <div key={it} style={{fontSize:12.6,color:"var(--ink-2)"}}>
+                  <span className="mono" style={{color:"var(--slate)",fontWeight:700}}>{name}</span>
+                  <span style={{color:"var(--muted)"}}> · {rest.join(" · ")}</span>
+                </div>;
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Stage>
+  );
+}
+
+// 7 — Section divider: The journey
+function SectionJourney(){
+  return (
+    <div className="divider">
+      <div className="dn">03</div>
+      <h2>The full journey of a question</h2>
+      <p>Follow one end-user's question as it passes <b>Permission · Semantics · SQL (Structured Query Language) · Validation · Execution · Analysis</b> —
+        six gates, each with a clear guard and an auditable artifact.</p>
+      <div className="row gap8" style={{marginTop:22}}>
+        {["① Permission","② Semantics","③ SQL","④ Validate","⑤ Execute","⑥ Analyze"].map(s=>
+          <span key={s} className="tag red" style={{fontSize:13,padding:"5px 12px"}}>{s}</span>)}
+      </div>
+    </div>
+  );
+}
+
+// 8 — Pipeline overview (plain-language 7-step journey)
+function Pipeline(){
+  // [color, step-no, plain title, tech node, one-line, right-chip, isGate, isLoop]
+  const steps = [
+    ["red","①","Security gate","pii_guard","Block prompt-injection attacks and mask personal data (PII)","Blocked = refused",true,false],
+    ["slate","②","Find tables","schema_link","Semantically find the most relevant business tables (RAG, Retrieval-Augmented Generation)","Relevant tables only",false,false],
+    ["teal","③","Draft query","sql_generate","GPT (OpenAI's Large Language Model) writes SQL under strict rules","Read-only · single · capped",false,false],
+    ["ochre","④","Check syntax","sql_validate","Rule-check the query structure (AST, Abstract Syntax Tree)","Deterministic floor",false,true],
+    ["red","①","Authorize","opa_check","Check role × table; an RM (Relationship Manager) sees only their own clients","Unauthorized = refused",true,false],
+    ["moss","⑤","Get data","execute","Run on a read-only database (Trino) as the real user","Identity pass-through",false,false],
+    ["plum","⑥","Explain","explain · output_mask","Translate results to business language, mask again on the way out","Human-readable answer",false,false],
+  ];
+  return (
+    <Stage kicker="How · Overview" title="How one question flows — seven visible steps">
+      <div className="row between center" style={{marginBottom:8}}>
+        <span className="tag ink">Start: ask in plain language</span>
+        <span style={{fontSize:12,color:"var(--muted)"}}>Every step has a guard; a unique trace ID (trace_id) is recorded throughout</span>
+        <span className="tag" style={{background:"var(--moss-s)",color:"var(--moss)",borderColor:"transparent"}}>End: a trusted answer</span>
+      </div>
+      <div className="col">
+        {steps.map(([c,num,title,node,desc,chip,gate,loop],i)=>(
+          <React.Fragment key={i}>
+            <div className="row center gap12" style={{padding:"6px 14px",borderRadius:9,background:"var(--"+c+"-s)",border:"1px solid var(--hair)"}}>
+              <div style={{width:30,height:30,borderRadius:"50%",flex:"none",background:"var(--"+c+")",color:"#fff",fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>{num}</div>
+              <div style={{width:120,flex:"none"}}>
+                <div style={{fontSize:15,fontWeight:700,color:"var(--ink)"}}>{title}</div>
+                <div className="mono" style={{fontSize:10,color:"var(--muted)"}}>{node}</div>
+              </div>
+              <div className="grow" style={{fontSize:12.8,color:"var(--ink-2)"}}>{desc}</div>
+              {loop && <span className="tag ochre" style={{flex:"none",fontSize:10.5}}>↺ back to ③</span>}
+              {gate && <span className="tag red" style={{flex:"none",fontSize:10.5}}>✕ refuse & log</span>}
+              <span className="tag" style={{flex:"none",background:"#fff",color:"var(--"+c+")",borderColor:"var(--"+c+")",fontSize:10.5,minWidth:118,justifyContent:"center"}}>{chip}</span>
+            </div>
+            {i<steps.length-1 && <div style={{textAlign:"center",color:"var(--faint)",fontSize:11,lineHeight:"13px"}}>↓</div>}
+          </React.Fragment>
+        ))}
+      </div>
+      <div className="row gap12" style={{marginTop:10}}>
+        <div style={{flex:1,padding:"8px 14px",borderRadius:8,background:"var(--ochre-s)",border:"1px solid #ecdcbf",fontSize:12,color:"var(--ink-2)"}}>
+          <b>↺ Self-repair</b>: if step ④ fails, the errors are sent back to step ③ to rewrite, up to N times; still failing → refused.
+        </div>
+        <div style={{flex:1,padding:"8px 14px",borderRadius:8,background:"var(--red-s)",border:"1px solid #f2cfd2",fontSize:12,color:"var(--ink-2)"}}>
+          <b>✕ Two permission gates</b>: step ① and the authorization gate; a hit is refused, yet always logged and auditable.
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 9 — Stage ① Permission
+function StagePermission(){
+  return (
+    <Stage kicker="① How permission is checked" title="Defense in depth: three guards, each with a job" tone="var(--red)">
+      <div className="row gap14" style={{alignItems:"stretch"}}>
+        <div className="card accent grow">
+          <h4><Icon name="shield" size={18}/>Entry guard · pii_guard</h4>
+          <div className="col gap8" style={{marginTop:10}}>
+            <Li><b>Injection detection</b>: spots signals like “ignore previous instructions / act as a role / tamper with the database / jailbreak” → refuse at once; never silently execute.</Li>
+            <Li><b>PII (Personally Identifiable Information) detection</b>: Presidio flags name / email / credit card / bank account / ID number → mask before entry; <b>personal data never reaches the LLM (Large Language Model)</b>.</Li>
+          </div>
+          <div className="row gap8" style={{marginTop:12}}><span className="tag red">REFUSED · PROMPT_INJECTION</span><span className="tag ink">Continue after masking</span></div>
+        </div>
+        <div className="card accent grow">
+          <h4><Icon name="lock" size={18}/>Authorization gate · opa_check</h4>
+          <div className="col gap8" style={{marginTop:10}}>
+            <Li>Runs after validation, on a <b>trusted table list</b>; <b>OPA (Open Policy Agent)</b> decides <span className="mono">role × table</span>.</Li>
+            <Li><b>Default deny</b>: only a role on the allow-list passes, returning <span className="mono">matched_policy</span> + reasons.</Li>
+          </div>
+          <div className="row gap8" style={{marginTop:12}}><span className="tag red">REFUSED · OPA_DENIED</span><span className="tag slate">6 roles, differentiated</span></div>
+        </div>
+      </div>
+      <div className="row gap14" style={{marginTop:14,alignItems:"stretch"}}>
+        <div className="card grow" style={{background:"var(--ink)",color:"#fff",border:"none",flex:1.3}}>
+          <h4 style={{color:"#fff"}}><Icon name="filter" size={18} color="#ff8b96"/>Row-level · OPA obligation</h4>
+          <p style={{color:"#d9d9dc"}}>An RM (Relationship Manager) sees only their own clients: OPA issues a <span className="mono" style={{color:"#ffb0b8"}}>row_filter</span> obligation,
+            and Python wraps the validated SQL in an <span className="mono" style={{color:"#ffb0b8"}}>EXISTS</span> semi-join.</p>
+        </div>
+        <div className="code grow" style={{flex:1.7}}>
+<span className="c">-- role → table allow-list (from text2sql.rego)</span>{"\n"}
+<span className="k">Ops</span>        : client, account, transaction, fx_rate …{"\n"}
+<span className="k">Compliance</span> : … + <span className="n">client_contact, rm_user</span>{"\n\n"}
+<span className="c">-- RM row obligation, injected as a semi-join</span>{"\n"}
+SELECT _rf.* FROM (&lt;validated_sql&gt;) _rf{"\n"}
+WHERE EXISTS (SELECT 1 FROM client{"\n"}
+  WHERE client.cif_id=_rf.cif_id{"\n"}
+  AND <span className="s">client.rm_owner='alice@bank'</span>)
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 10 — Stage ② Semantic
+function StageSemantic(){
+  return (
+    <Stage kicker="② How semantics follow business logic" title="Schema cards + vector search feed the rules to the model" tone="var(--slate)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="col gap12 grow" style={{flex:1.05}}>
+          <div className="card"><h4><Icon name="link" size={18} color="var(--slate)"/>Curated schema cards</h4>
+            <p>Each table gets a card: <b>business description + columns + key JOIN (table-join) hints</b>. Definitions go into the card, so the model needn't guess.</p></div>
+          <div className="card"><h4><Icon name="route" size={18} color="var(--slate)"/>TEI (embeddings) + pgvector search</h4>
+            <p>The question is vectorized by <span className="mono">TEI</span> (Text Embeddings Inference) → the <span className="mono">pgvector</span> store returns the top-K most relevant cards via a nearest-neighbor index (HNSW). Only relevant tables reach the model.</p></div>
+          <div className="card"><h4><Icon name="refresh" size={18} color="var(--slate)"/>Fail = degrade</h4>
+            <p>If search is down, fall back to all cards — <b>degraded, not broken</b>; <span className="mono">used_fallback</span> goes into the trace.</p></div>
+        </div>
+        <div className="card wash" style={{flex:1.15,display:"flex",flexDirection:"column"}}>
+          <div className="row between center"><h4 style={{fontSize:14.5}}>A card fixes JOIN rules into semantics</h4><span className="tag slate">business logic</span></div>
+          <div className="code" style={{marginTop:10,fontSize:12.2,flex:1}}>
+<span className="n">Table country_ref</span>: ISO-2 → region / AML risk{"\n"}
+<span className="c">NOTE: risk_tier lives on country_ref,</span>{"\n"}
+<span className="c">  not client. Always join client c</span>{"\n"}
+<span className="c">  JOIN country_ref cr ON c.country_iso…</span>{"\n\n"}
+<span className="n">Table covenant</span>: financial covenants{"\n"}
+<span className="c">NOTE: covenant has no cif_id — reach the</span>{"\n"}
+<span className="c">  client via exposure: cov→exposure→client</span>{"\n\n"}
+<span className="n">Table exposure</span>: notional_usd / drawn_usd{"\n"}
+<span className="c">  / pd_bps — exact names stop hallucination.</span>
+          </div>
+          <div style={{fontSize:12,color:"var(--muted)",marginTop:8}}>11 CIB (Corporate &amp; Institutional Banking) table cards = the single source of truth (semantic recall ≥ 95%).</div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 11 — Stage ③ SQL generation
+function StageGenerate(){
+  return (
+    <Stage kicker="③ How the SQL (Structured Query Language) is organized" title="Constrained prompt + deterministic generation" tone="var(--teal)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="col gap12" style={{flex:1}}>
+          <div className="card"><h4><Icon name="code" size={18} color="var(--teal)"/>System prompt: hard rules</h4>
+            <div className="col gap8" style={{marginTop:8}}>
+              <Li>Output ONLY a <b>single SELECT</b> — no prose, comments or markdown.</Li>
+              <Li><b>Read-only</b>: no INSERT/UPDATE/DELETE/DDL/CALL/SET…</Li>
+              <Li>Reference only the <b>retrieved tables</b>; force a <span className="mono">LIMIT</span> (row cap); emit standard Trino SQL.</Li>
+            </div>
+          </div>
+          <div className="card"><h4><Icon name="spark" size={18} color="var(--teal)"/>OpenAI GPT · temperature 0 (deterministic)</h4>
+            <p>Called through the <b>LiteLLM gateway</b> (<span className="mono">router/sql-gen</span>) at zero temperature;
+              it is the <b>only egress path</b>, with keys centralized in <span className="mono">.env</span>.</p></div>
+          <div className="row gap8"><span className="tag teal">prompt_version: sql_generate@v1</span><span className="tag ink">tokens / cost → Langfuse</span></div>
+        </div>
+        <div className="code" style={{flex:1.2}}>
+<span className="c"># system prompt (excerpt)</span>{"\n"}
+You are a careful SQL assistant for a{"\n"}
+corporate banking analytics platform.{"\n\n"}
+Rules — violation ⇒ rejected:{"\n"}
+ 1. Output ONLY a single SQL <span className="k">SELECT</span>.{"\n"}
+ 2. Read-only: no <span className="f">INSERT/UPDATE/DDL/CALL</span>.{"\n"}
+ 3. Reference ONLY the listed table(s).{"\n"}
+ 4. Always include an explicit <span className="k">LIMIT</span> (1000).{"\n"}
+ 5. ANSI SQL accepted by Trino.{"\n\n"}
+<span className="c"># + schema cards injected via RAG</span>{"\n"}
+<span className="c"># + on retry: the prior violations as a hint</span>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 12 — Stage ④ Validate + self-repair
+function StageValidate(){
+  return (
+    <Stage kicker="④ How syntax is guaranteed" title="sqlglot syntax-tree (AST) validation: a deterministic safety floor" tone="var(--ochre)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="col gap12" style={{flex:1.05}}>
+          <div className="card"><h4><Icon name="check" size={18} color="var(--ochre)"/>Pure Python · no network · deterministic</h4>
+            <div className="col gap8" style={{marginTop:8}}>
+              <Li>Parse into an <b>Abstract Syntax Tree (AST)</b>; must be a single statement rooted in <b>SELECT</b>.</Li>
+              <Li>Forbid <span className="mono">INSERT/UPDATE/DELETE/DROP/CREATE/ALTER/MERGE/CALL</span> (including nested).</Li>
+              <Li>Tables must be on the <b>11-table allow-list</b>, else <span className="mono">table_not_allowed</span>.</Li>
+              <Li>No LIMIT → auto-wrap in a subquery with <span className="mono">LIMIT 1000</span>.</Li>
+            </div>
+          </div>
+          <div className="card wash"><h4 style={{fontSize:14.5}}><Icon name="refresh" size={17} color="var(--ochre)"/>Self-repair loop</h4>
+            <p style={{marginTop:6}}>On failure, feed the <span className="mono">violations</span> back to sql_generate and <b>regenerate</b> (up to N times);
+              still unsafe → <span className="mono">REFUSED · SQL_UNSAFE</span>. The metric <span className="mono">self_repair_total</span> is observable.</p></div>
+        </div>
+        <div className="col gap12" style={{flex:.95}}>
+          <div className="code" style={{flex:1}}>
+<span className="c"># validation result (SqlValidationResult)</span>{"\n"}
+{"{"}{"\n"}
+  <span className="n">"safe"</span>: <span className="k">true</span>,{"\n"}
+  <span className="n">"tables_used"</span>: [<span className="s">"client"</span>,<span className="s">"country_ref"</span>],{"\n"}
+  <span className="n">"violations"</span>: [],{"\n"}
+  <span className="n">"sql"</span>: <span className="s">"SELECT … LIMIT 1000"</span>{"\n"}
+{"}"}
+          </div>
+          <div className="row gap8" style={{flexWrap:"wrap"}}>
+            <span className="tag ochre">even if the model misbehaves…</span>
+            <span className="tag red">…this floor holds</span>
+          </div>
+          <div className="card" style={{background:"var(--ochre-s)",border:"1px solid #ecdcbf"}}>
+            <p style={{color:"var(--ink-2)",margin:0,fontSize:13.5}}><b>Why it sits here</b>: security does not rely on the model's good will.
+              Even if generation is tricked, the AST validator blocks any non-SELECT and any unauthorized table — by rule.</p>
+          </div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 13 — Stage ⑤ Execute
+function StageExecute(){
+  return (
+    <Stage kicker="⑤ How results are obtained" title="Trino execution: identity pass-through, no impersonation" tone="var(--moss)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="col gap12" style={{flex:1}}>
+          <div className="card"><h4><Icon name="db" size={18} color="var(--moss)"/>Identity pass-through</h4>
+            <p>Runs with the <b>real user identity</b>, not a service account — so the execution layer applies row/column rights and quota, and leaves an audit trail.</p>
+            <div className="col gap8" style={{marginTop:10}}>
+              <div className="kv"><span className="k">X-Trino-User</span><span className="v">alice@bank</span></div>
+              <div className="kv"><span className="k">X-Trino-Source</span><span className="v">text2sql / role=RM</span></div>
+              <div className="kv"><span className="k">X-Trino-Trace-Token</span><span className="v">= trace_id</span></div>
+            </div>
+          </div>
+        </div>
+        <div className="col gap12" style={{flex:1}}>
+          <div className="card"><h4><Icon name="lock" size={18} color="var(--moss)"/>Read-only + quota</h4>
+            <p><b>Trino 442</b> over PostgreSQL (<span className="mono">cib.public</span>), on a read-only replica;
+              queries have a timeout and row cap, and a <span className="mono">truncated</span> flag is passed through.</p></div>
+          <div className="card wash"><h4 style={{fontSize:14.5}}><Icon name="filter" size={17} color="var(--moss)"/>It runs the row-filtered query</h4>
+            <p style={{marginTop:6}}>If OPA issued an RM (Relationship Manager) row obligation, what executes is the <span className="mono">EXISTS</span>-wrapped version —
+              alice can only ever get her own clients' rows.</p></div>
+          <div className="row gap8"><span className="tag moss">row_count · elapsed_ms → span</span></div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 14 — Stage ⑥ Analyze
+function StageAnalyze(){
+  return (
+    <Stage kicker="⑥ How results are analyzed" title="Business explanation + a second, outbound masking" tone="var(--plum)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="card grow"><h4><Icon name="chart" size={18} color="var(--plum)"/>explain · business-language summary</h4>
+          <div className="col gap8" style={{marginTop:10}}>
+            <Li>GPT (OpenAI's Large Language Model) writes a <b>1–2 sentence</b> summary: it never restates the SQL, invents no numbers, cites only the preview.</Li>
+            <Li><b>Non-blocking</b>: if it fails, the SQL + data still return (<span className="mono">failed=true</span> is logged).</Li>
+            <Li>Only <b>column names + first rows</b> go to the model — never re-send the whole table.</Li>
+          </div>
+          <div className="row gap8" style={{marginTop:12}}><span className="tag plum">generation: explain@v1</span><span className="tag ink">billed / timed separately</span></div>
+        </div>
+        <div className="card grow"><h4><Icon name="shield" size={18} color="var(--plum)"/>output_mask · outbound masking</h4>
+          <div className="col gap8" style={{marginTop:10}}>
+            <Li>Re-runs Presidio over <b>every string cell + the explanation</b>; a hit becomes <span className="mono">&lt;PERSON&gt;</span> etc.</Li>
+            <Li><b>Non-blocking &amp; idempotent</b>: if Presidio is down, fall back to offline regex — never swallow the answer.</Li>
+            <Li>Records only <b>mask counts</b> (<span className="mono">cells_masked</span>) in the trace, never raw values.</Li>
+          </div>
+          <div className="row gap8" style={{marginTop:12}}><span className="tag red">Entry + exit = two-way PII protection</span></div>
+        </div>
+      </div>
+      <div className="card wash" style={{marginTop:14,background:"var(--plum-s)",border:"1px solid #e4cfe2"}}>
+        <p style={{margin:0,fontSize:13.8,color:"var(--ink-2)"}}>
+          <b>What the user sees:</b> a readable conclusion + a data table. <b>What the platform keeps:</b> the SQL, tables used, mask counts, latency, cost, trace ID — one Q&amp;A, two kinds of value.</p>
+      </div>
+    </Stage>
+  );
+}
+
+// 15 — Worked example (manager view)
+function Example(){
+  const steps = [
+    ["red","pii_guard","0 PII (personal data) · 0 injection signals","PASS"],
+    ["slate","schema_link","Top-2: client (0.82) · country_ref (0.76)","RAG"],
+    ["teal","sql_generate","SELECT c.cif_id, c.legal_name, c.aum_usd …","gen"],
+    ["ochre","sql_validate","safe · tables=[client,country_ref] · LIMIT injected","SAFE"],
+    ["red","opa_check","role=RM → allow · obligation row_filter","ALLOW"],
+    ["red","row_filter","wrap EXISTS: client.rm_owner='alice@bank'","inject"],
+    ["moss","execute","12 rows · 240ms · X-Trino-User=alice@bank","OK"],
+    ["plum","explain+mask","“12 active Singapore clients…” · 0 cells masked","OK"],
+  ];
+  return (
+    <Stage kicker="So managers see it clearly" title="A worked example: one question through every gate">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="col grow" style={{flex:1.4}}>
+          <div className="card wash" style={{padding:"12px 16px",marginBottom:10}}>
+            <div className="row between center">
+              <div style={{fontSize:15,fontWeight:700}}>“List my active clients in Singapore and their AUM (Assets Under Management)”</div>
+              <span className="tag red">end-user view</span>
+            </div>
+            <div className="row gap16" style={{marginTop:8,fontSize:12.5,color:"var(--muted)"}}>
+              <span>user <b className="mono" style={{color:"var(--ink-2)"}}>alice@bank</b></span>
+              <span>role <b className="mono" style={{color:"var(--ink-2)"}}>RM</b> (Relationship Manager)</span>
+              <span>trace_id <b className="mono" style={{color:"var(--ink-2)"}}>7f3a…c1</b></span>
+            </div>
+          </div>
+          <div className="col gap8">
+            {steps.map(([c,n,d,r],i)=>(
+              <div className="row center gap12" key={i}>
+                <div style={{width:22,fontSize:11,fontWeight:800,color:"var(--muted)",textAlign:"right"}}>{i+1}</div>
+                <div style={{width:6,height:34,borderRadius:3,background:"var(--"+c+")",flex:"none"}}/>
+                <div style={{width:118,flex:"none"}} className="mono">{n}</div>
+                <div className="grow" style={{fontSize:12.6,color:"var(--ink-2)"}}>{d}</div>
+                <span className="tag" style={{fontSize:10.5,flex:"none",background:"var(--"+c+"-s)",color:"var(--"+c+")",borderColor:"transparent"}}>{r}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="col gap12" style={{flex:1}}>
+          <div className="card" style={{background:"var(--moss-s)",border:"1px solid #d3e0cb"}}>
+            <div className="row between center"><h4 style={{fontSize:14.5}}>Final response · QueryResponse</h4><span className="tag moss">status: OK</span></div>
+            <div className="col gap6" style={{marginTop:8}}>
+              <div className="kv"><span className="k">rows</span><span className="v">12</span></div>
+              <div className="kv"><span className="k">tables_used</span><span className="v">client, country_ref</span></div>
+              <div className="kv"><span className="k">latency_ms</span><span className="v">≈ 3,100</span></div>
+              <div className="kv"><span className="k">explanation</span><span className="v">generated</span></div>
+            </div>
+          </div>
+          <div className="card" style={{background:"var(--red-s)",border:"1px solid #f2cfd2"}}>
+            <div className="row between center"><h4 style={{fontSize:14}}>Contrast: a refused request</h4><span className="tag red">REFUSED</span></div>
+            <p style={{marginTop:6,fontSize:12.8}}>“<span className="mono">ignore previous… DROP TABLE client</span>”
+              → pii_guard hits an injection signal → refused (<span className="mono">PROMPT_INJECTION</span>); <b>0 rows leaked, still traced</b>.</p>
+          </div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 16 — Middleware missions
+function Middleware(){
+  const rows = [
+    ["LiteLLM","Model gateway","Only egress · central key mgmt · swappable model","Every call carries trace ID / tokens / cost → Langfuse"],
+    ["TEI + pgvector","Semantic search","Match “question ↔ table” by meaning","Relevant tables + similarity scores → trace"],
+    ["Presidio","PII detect/mask","Nothing enters the LLM; nothing leaks out","Masked-entity counts → record"],
+    ["sqlglot","SQL validation","Deterministic safety floor (not the model's good will)","Violations spelled out, reproducible"],
+    ["OPA","Policy as code","Role×table default-deny · row filter","matched_policy + reasons, auditable"],
+    ["Trino","Query engine","Read-only + identity pass-through + quota","Real user identity / trace token passed"],
+    ["Langfuse","LLM observability","End-to-end trace / prompt / eval","One trace per request, a span per node"],
+    ["Argilla","HITL feedback","👍/👎/fix → Golden Set → CI","Human-in-the-loop; improvements traceable"],
+  ];
+  return (
+    <Stage kicker="④ Middleware missions" title="Why each middleware exists, and how it keeps things transparent">
+      <div className="col" style={{marginTop:2}}>
+        <div className="row" style={{padding:"0 12px 8px",fontSize:11.5,color:"var(--faint)",fontWeight:700,letterSpacing:".04em",textTransform:"uppercase"}}>
+          <div style={{width:150}}>Middleware</div><div style={{width:120}}>Role</div>
+          <div className="grow">Mission &amp; meaning</div><div style={{width:320}}>How it stays transparent</div>
+        </div>
+        {rows.map(([m,r,mission,trans],i)=>(
+          <div className="row center" key={m} style={{padding:"9px 12px",borderTop:"1px solid var(--hair)",background:i%2?"var(--wash)":"#fff"}}>
+            <div style={{width:150,fontWeight:700,fontSize:14,color:"var(--ink)"}} className="mono">{m}</div>
+            <div style={{width:120}}><span className="tag ink" style={{fontSize:10.5}}>{r}</span></div>
+            <div className="grow" style={{fontSize:12.8,color:"var(--ink-2)",paddingRight:14}}>{mission}</div>
+            <div style={{width:320,fontSize:12,color:"var(--slate)"}}><Icon name="eye" size={13} color="var(--slate)"/> <span style={{verticalAlign:"middle"}}>{trans}</span></div>
+          </div>
+        ))}
+      </div>
+      <div style={{marginTop:12,padding:"9px 14px",borderRadius:8,background:"var(--wash)",border:"1px solid var(--hair)",fontSize:11.8,color:"var(--muted)"}}>
+        <b style={{color:"var(--ink-2)"}}>Abbreviations:</b> PII Personally Identifiable Information · LLM Large Language Model · OPA Open Policy Agent · AST Abstract Syntax Tree · TEI Text Embeddings Inference · HITL Human-in-the-loop · CI Continuous Integration
+      </div>
+    </Stage>
+  );
+}
+
+// 17 — Transparency / observability
+function Observability(){
+  return (
+    <Stage kicker="How the process stays transparent" title="One trace ID stitches the whole chain together" tone="var(--slate)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="card grow" style={{flex:1.1}}>
+          <h4><Icon name="route" size={18} color="var(--slate)"/>trace_id (a unique trace ID): forced through every hop</h4>
+          <p>Generated at entry, carried by an HTTP header across LangGraph → LiteLLM → Trino → Presidio…;
+            logs, metrics and traces at any layer align on it.</p>
+          <div className="code" style={{marginTop:10,fontSize:12}}>
+<span className="c"># per-node spans (GraphState.spans)</span>{"\n"}
+pii_guard    ok   · 8ms   pii=0 injection=[]{"\n"}
+schema_link  ok   · 41ms  fallback=false{"\n"}
+sql_generate ok   · 2.1s  tokens 420/86{"\n"}
+sql_validate ok   · 3ms   safe=true{"\n"}
+opa_check    ok   · 12ms  allow=true{"\n"}
+execute      ok   · 240ms rows=12{"\n"}
+explain+mask ok   · 0.6s  masked=0
+          </div>
+        </div>
+        <div className="col gap12" style={{flex:1}}>
+          <div className="card wash"><h4 style={{fontSize:14.5}}><Icon name="spark" size={17} color="var(--slate)"/>Langfuse</h4>
+            <p style={{marginTop:6}}>Each Q&amp;A = one trace + several generations, with prompt version, token usage, cost and per-step latency.</p></div>
+          <div className="card wash"><h4 style={{fontSize:14.5}}><Icon name="chart" size={17} color="var(--slate)"/>Prometheus metrics</h4>
+            <div className="row gap8" style={{marginTop:8,flexWrap:"wrap"}}>
+              {["requests_total","security_blocks_total","self_repair_total","latency_seconds"].map(m=>
+                <span key={m} className="tag slate" style={{fontSize:10.5}}>text2sql_{m}</span>)}
+            </div></div>
+          <div className="card wash"><h4 style={{fontSize:14.5}}><Icon name="eye" size={17} color="var(--slate)"/>Grafana · Loki · Tempo</h4>
+            <p style={{marginTop:6}}>4-role dashboards + structured logs + distributed tracing (OTel, the OpenTelemetry standard); drill from a dashboard down to a single trace.</p></div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 18 — Security & SLO
+function Security(){
+  const controls = [
+    ["S1","SQL injection / over-access","syntax-tree (AST) allow-list + read-only + forced cap"],
+    ["S3","PII in / out","Presidio masks on entry + exit"],
+    ["S4","Prompt injection","rule-signal detection → refuse"],
+    ["S7","End-to-end audit","Langfuse hot store + archive + Loki"],
+    ["S8","Policy as code","OPA text2sql policy repo + PR review"],
+    ["S6","Egress convergence","a single LiteLLM egress path"],
+  ];
+  const slo = [["100%","Injection / over-access blocked"],["≥99%","Refusal precision"],["≥95%","Semantic-linking recall"],["≤8s","P95 (95th-pct) latency"],["≤$0.02","Cost per query"],["115","Tests passing"]];
+  return (
+    <Stage kicker="⑤ Security · Compliance · SLO (Service-Level Objective)" title="Security is a hard constraint from Day 1" tone="var(--red)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="grow" style={{flex:1.15}}>
+          <div className="row between center" style={{marginBottom:10}}><h4 style={{fontSize:15}}>Control matrix (excerpt)</h4><span className="tag ink">S1–S9</span></div>
+          <div className="col gap8">
+            {controls.map(([id,risk,ctrl])=>(
+              <div className="row center gap12" key={id} style={{padding:"9px 12px",border:"1px solid var(--hair)",borderRadius:8}}>
+                <span className="tag red" style={{flex:"none"}}>{id}</span>
+                <div style={{width:186,flex:"none",fontSize:13,fontWeight:700,color:"var(--ink)"}}>{risk}</div>
+                <div className="grow" style={{fontSize:12.5,color:"var(--muted)"}}>{ctrl}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{flex:.85}}>
+          <div className="row between center" style={{marginBottom:10}}><h4 style={{fontSize:15}}>Engineering SLO (draft)</h4><span className="tag slate">targets</span></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            {slo.map(([n,l])=>(
+              <div className="card wash" key={l} style={{padding:"14px 16px"}}>
+                <div className="stat"><div className="n" style={{fontSize:26}}>{n}</div><div className="l">{l}</div></div>
+              </div>
+            ))}
+          </div>
+          <div className="card" style={{marginTop:10,background:"var(--ink)",color:"#fff",border:"none"}}>
+            <p style={{margin:0,color:"#e4c7ca",fontSize:13}}><b style={{color:"#fff"}}>TDD (Test-Driven Development) first</b> —
+              every PR (pull request) needs a failing test first; security red-team cases must be 100% blocked, or it doesn't merge.</p>
+          </div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 19 — Close
+function Close(){
+  return (
+    <div className="cover">
+      <div className="band-top"/>
+      <div className="cmain">
+        <div className="eyebrow"><Hex size={30}/> Get started</div>
+        <h1>Safe, accurate, auditable —<br/>and <span className="accent">transparent</span> throughout.</h1>
+        <div className="row gap16" style={{marginTop:30,flexWrap:"wrap"}}>
+          <div className="card" style={{minWidth:300}}>
+            <h4 style={{fontSize:15}}><Icon name="bolt" size={17}/>One-command start</h4>
+            <div className="code" style={{marginTop:10,padding:"10px 14px"}}><span className="k">.\t2sql.ps1</span> start min</div>
+          </div>
+          <div className="card wash" style={{minWidth:380}}>
+            <h4 style={{fontSize:15}}><Icon name="route" size={17}/>Entry points</h4>
+            <div className="col gap6" style={{marginTop:8}}>
+              <div className="kv"><span className="k">Web UI (main)</span><span className="v">http://localhost:3203</span></div>
+              <div className="kv"><span className="k">LangGraph API / docs</span><span className="v">http://localhost:8080/docs</span></div>
+              <div className="kv"><span className="k">Langfuse trace</span><span className="v">http://localhost:3202</span></div>
+            </div>
+          </div>
+        </div>
+        <div className="sub" style={{marginTop:26,fontSize:18}}>
+          Try a question: <span className="mono" style={{color:"var(--red)"}}>“How many active clients are there?”</span></div>
+      </div>
+      <div className="cfoot">
+        <span className="row center" style={{gap:8}}><Hex size={16}/> Text2SQL Platform · CIB Data &amp; Analytics</span>
+        <span>Thank you · Q &amp; A</span>
+      </div>
+    </div>
+  );
+}
+
+/* ===================== deck registry ===================== */
+const DECK = [
+  {k:"Cover",        t:"Cover",              C:Cover},
+  {k:"Agenda",       t:"Agenda",             C:Agenda},
+  {k:"Why",          t:"Business pain",      C:Pain},
+  {k:"Why",          t:"Value",              C:Value},
+  {k:"What",         t:"8-layer architecture",C:Layers},
+  {k:"What",         t:"Topology",           C:Topology},
+  {k:"How",          t:"Section · the journey",C:SectionJourney},
+  {k:"How",          t:"7-step overview",    C:Pipeline},
+  {k:"① Permission", t:"Permission",         C:StagePermission},
+  {k:"② Semantics",  t:"Semantics",          C:StageSemantic},
+  {k:"③ SQL",        t:"Draft SQL",          C:StageGenerate},
+  {k:"④ Validate",   t:"Validate + repair",  C:StageValidate},
+  {k:"⑤ Execute",    t:"Get results",        C:StageExecute},
+  {k:"⑥ Analyze",    t:"Analyze",            C:StageAnalyze},
+  {k:"Example",      t:"Worked example",     C:Example},
+  {k:"Middleware",   t:"Middleware",         C:Middleware},
+  {k:"Transparency", t:"Transparency",       C:Observability},
+  {k:"Security",     t:"Security & SLO",     C:Security},
+  {k:"Close",        t:"Get started",        C:Close},
+];
+
+/* ===================== app shell ===================== */
+const ZH_DECK = "index.html", EN_DECK = "index.en.html";
+const IS_ZH = false;   // this file is the English deck
+function readHashIndex(){
+  if (typeof location === "undefined") return 0;
+  const h = parseInt((location.hash || "").replace("#",""), 10);
+  return (Number.isInteger(h) && h >= 0 && h < DECK.length) ? h : 0;
+}
+
+function App(){
+  const total = DECK.length;
+  const [cur,setCur] = useState(readHashIndex);
+  const [scale,setScale] = useState(1);
+  const [ov,setOv] = useState(false);
+  const [hint,setHint] = useState(true);
+
+  const go = useCallback((n)=>setCur(c=>Math.max(0,Math.min(total-1, typeof n==="function"?n(c):n))),[total]);
+  const goLang = (file)=>{ if(typeof location!=="undefined") location.href = file + "#" + cur; };
+
+  useEffect(()=>{ if(typeof history!=="undefined"){ try{ history.replaceState(null,"","#"+cur); }catch(e){} } },[cur]);
+
+  useEffect(()=>{
+    const fit=()=>setScale(Math.min(window.innerWidth/1280, (window.innerHeight)/720));
+    fit(); window.addEventListener("resize",fit); return ()=>window.removeEventListener("resize",fit);
+  },[]);
+  useEffect(()=>{ const t=setTimeout(()=>setHint(false),4200); return ()=>clearTimeout(t); },[]);
+  useEffect(()=>{
+    const onKey=(e)=>{
+      if(e.key==="o"||e.key==="O"){ setOv(v=>!v); return; }
+      if(ov){ if(e.key==="Escape") setOv(false); return; }
+      if(["ArrowRight","PageDown"," ","Enter","l"].includes(e.key)){ e.preventDefault(); go(c=>c+1); }
+      else if(["ArrowLeft","PageUp","h"].includes(e.key)){ e.preventDefault(); go(c=>c-1); }
+      else if(e.key==="Home"){ go(0); }
+      else if(e.key==="End"){ go(total-1); }
+      else if(e.key==="f"||e.key==="F"){ if(!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+      else if(e.key==="t"||e.key==="T"){ goLang(IS_ZH?EN_DECK:ZH_DECK); }
+    };
+    window.addEventListener("keydown",onKey); return ()=>window.removeEventListener("keydown",onKey);
+  },[ov,go,total,cur]);
+
+  const Current = DECK[cur].C;
+  return (
+    <Deck.Provider value={{cur,total}}>
+      <div className="topbar"><i style={{width:((cur+1)/total*100)+"%"}}/></div>
+      <div className="backdrop">
+        <div className="stage" style={{transform:`translate(-50%,-50%) scale(${scale})`}}>
+          <div className="slide" key={cur}><Current/></div>
+        </div>
+      </div>
+
+      <div className="ui left">
+        <button className="btn circ" onClick={()=>go(c=>c-1)} title="Previous (←)">‹</button>
+      </div>
+      <div className="ui right">
+        <div className="langtog" title="Language · 切换语言 (T)">
+          <button className={IS_ZH?"on":""} onClick={()=>{ if(!IS_ZH) goLang(ZH_DECK); }}>中文</button>
+          <button className={!IS_ZH?"on":""} onClick={()=>{ if(IS_ZH) goLang(EN_DECK); }}>EN</button>
+        </div>
+        <span className="counter">{String(cur+1).padStart(2,"0")} / {total}</span>
+        <button className="btn" onClick={()=>setOv(true)} title="Contents (O)"><Icon name="gear" size={14} color="currentColor"/>Contents</button>
+        <button className="btn" onClick={()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }} title="Fullscreen (F)">Fullscreen</button>
+        <button className="btn circ" onClick={()=>go(c=>c+1)} title="Next (→)">›</button>
+      </div>
+
+      {hint && <div className="hint">← → or Space to move · O contents · F fullscreen · T 中/EN · Home/End</div>}
+
+      {ov && (
+        <div className="ov" onClick={()=>setOv(false)}>
+          <h3><Hex size={22}/> Text2SQL Platform · Contents <span className="x" onClick={()=>setOv(false)}>Close ✕</span></h3>
+          <div className="ovgrid" onClick={e=>e.stopPropagation()}>
+            {DECK.map((d,i)=>(
+              <div key={i} className={"ovc"+(i===cur?" on":"")} onClick={()=>{ go(i); setOv(false); }}>
+                <div className="oi">{String(i+1).padStart(2,"0")}</div>
+                <div className="ot">{d.t}</div>
+                <div className="ok">{d.k}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Deck.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

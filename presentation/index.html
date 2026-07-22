@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<!--
+  Text2SQL Platform — 汇报演示（PPT 风格 · 静态 React 单页）
+  · 100% 本地化：React / ReactDOM / Babel 已 vendored 到 ./vendor，断网也可运行。
+  · 打开方式：直接双击本文件，或 `.\t2sql.ps1` 无关，纯前端静态页。
+  · 操作：← → / 空格 翻页 · Home/End 首末页 · O 目录 · F 全屏。
+  · 视觉：金融商务风格（红/白/灰 · 六边形标识 · 克制留白）。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Text2SQL 平台 · 企业级自然语言数据查询</title>
+<style>
+  :root{
+    --red:#DB0011; --red-dk:#A6000D; --red-soft:#fbe9ea;
+    --ink:#1a1a1a; --ink-2:#3c3c3c; --muted:#6b6b6b; --faint:#9a9a9a;
+    --paper:#ffffff; --backdrop:#e7e8ea; --wash:#f6f6f7; --wash-2:#f0f1f2;
+    --hair:#dedede; --hair-2:#cfcfcf;
+    --slate:#3f5d7a; --teal:#00817a; --ochre:#a56a00; --plum:#6c3f68; --moss:#4c6b3d; --steel:#59708a;
+    --slate-s:#eaf0f5; --teal-s:#e3f2f0; --ochre-s:#f6efe2; --plum-s:#f2eaf1; --moss-s:#eef2ea; --red-s:#fbe9ea;
+    --mono:'Cascadia Code','JetBrains Mono','Consolas','SFMono-Regular',monospace;
+    --sans:'Helvetica Neue','Segoe UI',Arial,'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans); color:var(--ink); background:var(--backdrop);
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+  }
+  #root{height:100vh;width:100vw}
+
+  /* ---------- deck shell ---------- */
+  .backdrop{
+    position:fixed;inset:0;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #f2f3f4 0%, var(--backdrop) 60%);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .topbar{position:fixed;top:0;left:0;right:0;height:4px;z-index:60;background:#d3d4d6}
+  .topbar > i{display:block;height:100%;background:var(--red);transition:width .35s cubic-bezier(.4,0,.2,1)}
+
+  .stage{
+    position:absolute;top:50%;left:50%;
+    width:1280px;height:720px;transform-origin:center center;
+    background:var(--paper);
+    box-shadow:0 24px 70px rgba(20,20,25,.22), 0 3px 10px rgba(20,20,25,.10);
+    overflow:hidden;
+  }
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;animation:fade .34s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  /* content slide frame */
+  .frame{display:flex;flex-direction:column;height:100%;padding:44px 64px 0}
+  .kicker{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);font-weight:700}
+  .title{font-size:38px;line-height:1.1;font-weight:700;letter-spacing:-.01em;color:var(--ink);margin-top:8px}
+  .title .en{color:var(--faint);font-weight:600;font-size:20px;letter-spacing:0;margin-left:10px}
+  .rule{height:3px;width:64px;background:var(--red);margin:16px 0 0}
+  .body{flex:1;min-height:0;padding:26px 0 0;display:flex;flex-direction:column}
+  .foot{height:46px;flex:none;display:flex;align-items:center;justify-content:space-between;
+    border-top:1px solid var(--hair);color:var(--faint);font-size:12.5px}
+  .foot .fl{display:flex;align-items:center;gap:9px}
+  .foot .fbrand{color:var(--ink-2);font-weight:600;letter-spacing:.01em}
+  .foot .ftag{color:var(--faint)}
+  .foot .fnum{font-variant-numeric:tabular-nums;letter-spacing:.06em}
+
+  /* ---------- hexagon mark ---------- */
+  .hex{display:inline-block;vertical-align:middle}
+
+  /* ---------- primitives ---------- */
+  .row{display:flex}
+  .col{display:flex;flex-direction:column}
+  .gap8{gap:8px}.gap12{gap:12px}.gap16{gap:16px}.gap20{gap:20px}.gap24{gap:24px}
+  .grow{flex:1;min-width:0}
+  .center{align-items:center}.between{justify-content:space-between}
+
+  .card{background:var(--paper);border:1px solid var(--hair);border-radius:10px;padding:18px 20px}
+  .card.wash{background:var(--wash)}
+  .card.accent{border-left:4px solid var(--red)}
+  .card h4{font-size:17px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:9px}
+  .card p{font-size:14px;color:var(--ink-2);line-height:1.55;margin-top:7px}
+  .card .lead{font-size:14.5px;color:var(--muted)}
+
+  .chipnum{flex:none;width:26px;height:26px;border-radius:6px;background:var(--red);color:#fff;
+    font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+  .tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    padding:3px 9px;border-radius:20px;background:var(--wash-2);color:var(--ink-2);border:1px solid var(--hair)}
+  .tag.red{background:var(--red-s);color:var(--red-dk);border-color:#f2cfd2}
+  .tag.slate{background:var(--slate-s);color:var(--slate);border-color:#d5e0ea}
+  .tag.teal{background:var(--teal-s);color:var(--teal);border-color:#c9e6e2}
+  .tag.ochre{background:var(--ochre-s);color:var(--ochre);border-color:#ecdcbf}
+  .tag.plum{background:var(--plum-s);color:var(--plum);border-color:#e4cfe2}
+  .tag.moss{background:var(--moss-s);color:var(--moss);border-color:#d3e0cb}
+  .tag.ink{background:#efefef;color:var(--ink-2);border-color:var(--hair)}
+
+  .mono{font-family:var(--mono)}
+  .code{font-family:var(--mono);font-size:13.5px;line-height:1.6;color:#e8edf2;background:#1f2733;
+    border-radius:9px;padding:14px 16px;white-space:pre;overflow:hidden}
+  .code .k{color:#8fb7ff}.code .s{color:#a9e6a0}.code .c{color:#7f8a99}.code .n{color:#e6c07b}.code .f{color:#e59fce}
+
+  .li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--ink-2);line-height:1.5}
+  .li .dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--red);margin-top:7px}
+  .li b{color:var(--ink);font-weight:700}
+
+  .kv{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:6px 0;border-bottom:1px dashed var(--hair)}
+  .kv .k{color:var(--muted)}.kv .v{color:var(--ink);font-weight:600;font-family:var(--mono);font-size:12.8px}
+
+  .stat{display:flex;flex-direction:column;gap:2px}
+  .stat .n{font-size:34px;font-weight:800;letter-spacing:-.02em;color:var(--ink);line-height:1;font-variant-numeric:tabular-nums}
+  .stat .n .u{font-size:16px;font-weight:700;color:var(--muted)}
+  .stat .l{font-size:12.5px;color:var(--muted)}
+
+  /* pipeline nodes */
+  .node{border:1px solid var(--hair);border-radius:9px;background:#fff;padding:9px 11px;min-width:0;position:relative}
+  .node .nm{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ink)}
+  .node .sub{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.3}
+  .node.red{border-top:3px solid var(--red);background:var(--red-s)}
+  .node.slate{border-top:3px solid var(--slate);background:var(--slate-s)}
+  .node.teal{border-top:3px solid var(--teal);background:var(--teal-s)}
+  .node.ochre{border-top:3px solid var(--ochre);background:var(--ochre-s)}
+  .node.moss{border-top:3px solid var(--moss);background:var(--moss-s)}
+  .node.plum{border-top:3px solid var(--plum);background:var(--plum-s)}
+  .arrow{flex:none;display:flex;align-items:center;color:var(--faint);font-size:16px}
+
+  /* layer bands */
+  .band{display:flex;align-items:center;gap:14px;padding:9px 14px;border:1px solid var(--hair);border-bottom:none;background:#fff}
+  .band:last-child{border-bottom:1px solid var(--hair)}
+  .band:nth-child(even){background:var(--wash)}
+  .band.hot{background:var(--red-s);border-color:#f0cdd0}
+  .band .lx{flex:none;width:44px;height:30px;border-radius:6px;background:var(--ink);color:#fff;font-weight:800;
+    font-size:13px;display:flex;align-items:center;justify-content:center;letter-spacing:.02em}
+  .band.hot .lx{background:var(--red)}
+  .band .nm{flex:none;width:150px;font-weight:700;font-size:14.5px;color:var(--ink)}
+  .band .tech{flex:none;width:360px;font-size:12.5px;color:var(--slate);font-family:var(--mono)}
+  .band .msn{flex:1;font-size:12.8px;color:var(--muted);text-align:right}
+
+  /* viewport controls (unscaled) */
+  .ui{position:fixed;z-index:50;bottom:16px;display:flex;align-items:center;gap:8px}
+  .ui.left{left:18px}.ui.right{right:18px}
+  .btn{border:1px solid var(--hair-2);background:rgba(255,255,255,.9);backdrop-filter:blur(6px);
+    color:var(--ink-2);border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600;cursor:pointer;
+    font-family:var(--sans);display:inline-flex;align-items:center;gap:7px;transition:all .15s}
+  .btn:hover{border-color:var(--red);color:var(--red)}
+  .btn.circ{width:40px;height:40px;padding:0;justify-content:center;font-size:18px;border-radius:50%}
+  .counter{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;background:rgba(255,255,255,.85);
+    border:1px solid var(--hair);border-radius:8px;padding:8px 12px;font-weight:600;letter-spacing:.05em}
+  .langtog{display:inline-flex;border:1px solid var(--hair-2);border-radius:8px;overflow:hidden;background:rgba(255,255,255,.9);backdrop-filter:blur(6px)}
+  .langtog button{border:none;background:transparent;color:var(--muted);font-family:var(--sans);font-weight:700;font-size:12.5px;padding:8px 11px;cursor:pointer;transition:all .15s}
+  .langtog button.on{background:var(--red);color:#fff;cursor:default}
+  .langtog button:not(.on):hover{color:var(--red)}
+
+  /* overview */
+  .ov{position:fixed;inset:0;z-index:80;background:rgba(28,28,30,.72);backdrop-filter:blur(4px);
+    display:flex;flex-direction:column;padding:40px 56px;animation:fade .2s ease both}
+  .ov h3{color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;gap:12px;margin-bottom:20px}
+  .ov h3 .x{margin-left:auto;cursor:pointer;font-size:14px;color:#cfcfcf;border:1px solid #555;border-radius:6px;padding:5px 12px}
+  .ovgrid{flex:1;display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:min-content;gap:14px;overflow:auto;align-content:start}
+  .ovc{background:#fff;border-radius:8px;padding:12px;cursor:pointer;border:2px solid transparent;transition:all .15s;min-height:82px;display:flex;flex-direction:column;gap:6px}
+  .ovc:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+  .ovc.on{border-color:var(--red)}
+  .ovc .oi{font-size:11px;font-weight:800;color:var(--red);font-variant-numeric:tabular-nums}
+  .ovc .ot{font-size:13px;font-weight:700;color:var(--ink);line-height:1.25}
+  .ovc .ok{font-size:10.5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+
+  .hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:40;font-size:11.5px;color:var(--faint);
+    background:rgba(255,255,255,.7);border:1px solid var(--hair);border-radius:20px;padding:6px 14px;
+    letter-spacing:.02em;transition:opacity .4s}
+
+  /* cover */
+  .cover{height:100%;display:flex;flex-direction:column;padding:0}
+  .cover .band-top{height:8px;background:var(--red)}
+  .cover .cmain{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 84px}
+  .cover .eyebrow{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:13.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+  .cover h1{font-size:62px;line-height:1.04;font-weight:800;letter-spacing:-.02em;color:var(--ink);margin-top:22px}
+  .cover h1 .accent{color:var(--red)}
+  .cover .sub{font-size:22px;color:var(--ink-2);margin-top:20px;max-width:820px;line-height:1.45;font-weight:400}
+  .cover .meta{display:flex;gap:10px;margin-top:34px;flex-wrap:wrap}
+  .cover .cfoot{padding:20px 84px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;align-items:center;color:var(--faint);font-size:13px}
+
+  /* section divider */
+  .divider{height:100%;display:flex;flex-direction:column;justify-content:center;padding:0 84px;background:linear-gradient(120deg,#fbfbfc,#f4f5f6)}
+  .divider .dn{font-size:120px;font-weight:800;color:var(--red-soft);line-height:.9;letter-spacing:-.03em}
+  .divider h2{font-size:46px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-top:-30px}
+  .divider p{font-size:18px;color:var(--muted);margin-top:14px;max-width:640px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="./vendor/react.production.min.js"></script>
+<script src="./vendor/react-dom.production.min.js"></script>
+<script src="./vendor/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback, createContext, useContext } = React;
+
+/* ===================== shared bits ===================== */
+const Deck = createContext({ cur:0, total:0 });
+
+function Hex({ size=34 }){
+  return (
+    <span className="hex" style={{width:size,height:size}}>
+      <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
+        <polygon points="25,6.7 75,6.7 100,50 75,93.3 25,93.3 0,50" fill="#DB0011"/>
+        <polygon points="25,6.7 75,6.7 50,50" fill="#ffffff"/>
+        <polygon points="25,93.3 75,93.3 50,50" fill="#ffffff"/>
+      </svg>
+    </span>
+  );
+}
+
+const ICONS = {
+  shield:"M12 3l7 3v5c0 4.4-3 8.3-7 9.5C8 19.3 5 15.4 5 11V6l7-3z",
+  link:"M9 15l6-6M8.5 8.5l-2 2a3.5 3.5 0 105 5l2-2M15.5 15.5l2-2a3.5 3.5 0 10-5-5l-2 2",
+  code:"M8 8l-4 4 4 4M16 8l4 4-4 4M13 5l-2 14",
+  check:"M4 12l5 5L20 6",
+  db:"M12 4c4 0 7 1.1 7 2.5S16 9 12 9 5 7.9 5 6.5 8 4 12 4zM5 6.5v11C5 19 8 20 12 20s7-1 7-2.5v-11",
+  chart:"M4 20V6M4 20h16M9 20v-6M14 20v-9M19 20v-4",
+  gear:"M12 9a3 3 0 100 6 3 3 0 000-6zM19 12l1.5 1-1.2 2.9-1.8-.4-1.3 1.3.4 1.8L12 22l-1.9-1.5.4-1.8-1.3-1.3-1.8.4L6.5 15 8 14v-2l-1.5-1 1.2-2.9 1.8.4 1.3-1.3-.4-1.8L12 2l1.9 1.5-.4 1.8 1.3 1.3 1.8-.4L19 9l-1.5 1z",
+  eye:"M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7zM12 9a3 3 0 100 6 3 3 0 000-6z",
+  lock:"M6 10V7a6 6 0 1112 0v3M5 10h14v10H5z",
+  route:"M6 19a2 2 0 100-4 2 2 0 000 4zM18 9a2 2 0 100-4 2 2 0 000 4zM8 17h6a3 3 0 003-3V9",
+  filter:"M3 5h18l-7 8v5l-4 2v-7z",
+  refresh:"M20 11a8 8 0 10-2 5M20 5v6h-6",
+  spark:"M12 3l2.2 6.2L20 11l-5.8 1.8L12 19l-2.2-6.2L4 11l5.8-1.8z",
+  bolt:"M13 2L4 14h6l-1 8 9-12h-6z",
+  clock:"M12 3a9 9 0 100 18 9 9 0 000-18zM12 7.5V12l3 2"
+};
+function Icon({ name, size=20, color="var(--red)", w=1.9 }){
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke={color} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={ICONS[name]||""} />
+    </svg>
+  );
+}
+
+function Stage({ kicker, title, en, children, tone }){
+  const { cur, total } = useContext(Deck);
+  return (
+    <div className="frame">
+      <div>
+        {kicker && <div className="kicker">{kicker}</div>}
+        <div className="title">{title}{en && <span className="en">{en}</span>}</div>
+        <div className="rule" style={tone?{background:tone}:null}/>
+      </div>
+      <div className="body">{children}</div>
+      <div className="foot">
+        <div className="fl"><Hex size={17}/><span className="fbrand">Text2SQL Platform</span>
+          <span className="ftag">· CIB Data &amp; Analytics · 内部资料</span></div>
+        <div className="fnum">{String(cur+1).padStart(2,"0")} / {String(total).padStart(2,"0")}</div>
+      </div>
+    </div>
+  );
+}
+
+const Node = ({ tone, nm, sub, style }) =>
+  <div className={"node "+(tone||"")} style={style}><div className="nm">{nm}</div>{sub&&<div className="sub">{sub}</div>}</div>;
+const Ar = ({ v }) => <div className="arrow">{v?"▼":"▶"}</div>;
+const Li = ({ children }) => <div className="li"><span className="dot"/><span>{children}</span></div>;
+
+/* ===================== slides ===================== */
+
+// 1 — Cover
+function Cover(){
+  return (
+    <div className="cover">
+      <div className="band-top"/>
+      <div className="cmain">
+        <div className="eyebrow"><Hex size={30}/> Text2SQL Platform · 企业级方案汇报</div>
+        <h1>用<span className="accent">自然语言</span>，<br/>安全查询银行数据。</h1>
+        <div className="sub">面向 RM（Relationship Manager，客户经理）、风险、合规、运营与 Finance（财务）—— 让业务自助取数，
+          安全、准确、可审计，且每一步都<b>透明可追溯</b>。</div>
+        <div className="meta">
+          <span className="tag red"><Icon name="spark" size={13} color="var(--red-dk)"/> Powered by OpenAI GPT</span>
+          <span className="tag slate">8 层架构</span>
+          <span className="tag teal">7 步安全旅程 · 自愈回环</span>
+          <span className="tag ochre">11 容器 · Docker Compose</span>
+          <span className="tag ink">115 项测试通过</span>
+        </div>
+      </div>
+      <div className="cfoot">
+        <span>启动方式：<span className="mono" style={{color:"var(--ink-2)"}}>.\t2sql.ps1 start min</span></span>
+        <span>2026 · 汇报材料</span>
+      </div>
+    </div>
+  );
+}
+
+// 2 — Agenda
+function Agenda(){
+  const items = [
+    ["01","业务痛点与价值","为什么要做 —— 取数工单、越权、PII（个人身份信息）泄露、口径漂移、无审计","spark"],
+    ["02","平台架构与分层","是什么 —— 8 层架构 · 11 容器 · 显式契约","gear"],
+    ["03","一个问题的完整旅程","怎么做 —— 权限 → 语义 → 写 SQL（结构化查询语言）→ 校验 → 执行 → 分析","route"],
+    ["04","中间件的使命与过程透明","每个中间件为何存在，如何让全链路可观测","eye"],
+    ["05","安全、合规与 SLO（Service-Level Objective，服务级目标）","硬约束 · 控制矩阵 · 服务级目标","shield"],
+  ];
+  return (
+    <Stage kicker="Agenda" title="本次汇报议程" en="Agenda">
+      <div className="col gap12" style={{marginTop:4}}>
+        {items.map(([n,t,d,ic])=>(
+          <div className="card row center gap16" key={n} style={{padding:"15px 20px"}}>
+            <div className="chipnum" style={{width:34,height:34,fontSize:16,background:"var(--ink)"}}>{n}</div>
+            <Icon name={ic} size={22}/>
+            <div className="grow">
+              <div style={{fontSize:19,fontWeight:700}}>{t}</div>
+              <div style={{fontSize:13.5,color:"var(--muted)",marginTop:2}}>{d}</div>
+            </div>
+            <span className="arrow">▶</span>
+          </div>
+        ))}
+      </div>
+    </Stage>
+  );
+}
+
+// 3 — Pain points
+function Pain(){
+  const cards = [
+    ["取数工单积压","业务提需求 → 数据团队排队，平均等待数天，分析节奏被 IT 卡住。","clock"],
+    ["越权风险","谁能看哪些客户、哪些表？靠人肉审查与口头约定，难以稽核。","lock"],
+    ["PII（个人身份信息）泄露","客户姓名、账号、邮箱在明文 SQL（结构化查询语言）与结果中流转，一旦外泄即合规事故。","shield"],
+    ["口径漂移","同一个指标，不同人写出不同 SQL，报表对不齐、结论打架。","link"],
+    ["无审计追溯","出了问题，无法回答“谁、何时、用什么权限、查了什么”。","eye"],
+  ];
+  return (
+    <Stage kicker="Why · 业务痛点" title="传统“提工单取数”的五个顽疾" en="The Problem">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="col gap12" style={{flex:1.15}}>
+          {cards.slice(0,3).map(([t,d,ic])=>(
+            <div className="card accent" key={t}>
+              <h4><Icon name={ic} size={19}/>{t}</h4><p>{d}</p>
+            </div>
+          ))}
+        </div>
+        <div className="col gap12" style={{flex:1.15}}>
+          {cards.slice(3).map(([t,d,ic])=>(
+            <div className="card accent" key={t}>
+              <h4><Icon name={ic} size={19}/>{t}</h4><p>{d}</p>
+            </div>
+          ))}
+          <div className="card wash" style={{background:"var(--ink)",border:"none",color:"#fff",flex:1,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+            <div style={{fontSize:14,color:"#e9c9cc",fontWeight:600,letterSpacing:".04em"}}>一句话</div>
+            <div style={{fontSize:19,fontWeight:700,marginTop:8,lineHeight:1.4}}>
+              业务要的是<span style={{color:"#ff8b96"}}>答案</span>，<br/>不是学 SQL、也不是等排期。</div>
+          </div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 4 — Value
+function Value(){
+  const pillars = [
+    ["自助化","spark","自然语言 → 结果，秒级返回；把数据团队从重复取数中解放出来。"],
+    ["安全内建","shield","注入 / 越权 100% 拦截（硬指标）；PII（个人身份信息）入口、出口双向脱敏。"],
+    ["可信赖","lock","只读、强制 LIMIT（行数上限）、身份穿透；每次查询一个 trace_id（唯一追踪号）全链路留痕 ≥ 7 年。"],
+    ["口径一致","link","语义层 + 策展 Schema 卡片，把业务口径固化进检索与提示。"],
+    ["可替换","gear","每层以显式契约暴露能力，任一组件可独立升级或替换。"],
+    ["可观测","eye","Langfuse Trace + Prometheus 指标 + Grafana 大盘，过程全透明。"],
+  ];
+  return (
+    <Stage kicker="Why · 价值主张" title="平台把“取数”变成一条可信赖的流水线" en="Value">
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginTop:2}}>
+        {pillars.map(([t,ic,d])=>(
+          <div className="card" key={t} style={{display:"flex",flexDirection:"column",gap:8}}>
+            <div className="row center gap12">
+              <div style={{width:38,height:38,borderRadius:9,background:"var(--red-s)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <Icon name={ic} size={20}/></div>
+              <div style={{fontSize:17.5,fontWeight:700}}>{t}</div>
+            </div>
+            <p style={{margin:0}}>{d}</p>
+          </div>
+        ))}
+      </div>
+      <div className="row gap24 center" style={{marginTop:18,padding:"14px 20px",background:"var(--wash)",border:"1px solid var(--hair)",borderRadius:10}}>
+        <div className="stat"><div className="n">100<span className="u">%</span></div><div className="l">注入 / 越权拦截（硬指标）</div></div>
+        <div style={{width:1,height:38,background:"var(--hair-2)"}}/>
+        <div className="stat"><div className="n">≤8<span className="u">s</span></div><div className="l">P95（95 分位）端到端延迟目标</div></div>
+        <div style={{width:1,height:38,background:"var(--hair-2)"}}/>
+        <div className="stat"><div className="n">≤$0.02</div><div className="l">单查询平均成本目标</div></div>
+        <div style={{width:1,height:38,background:"var(--hair-2)"}}/>
+        <div className="stat"><div className="n">≥95<span className="u">%</span></div><div className="l">语义检索命中率（Recall@5）目标</div></div>
+      </div>
+    </Stage>
+  );
+}
+
+// 5 — 8-layer architecture
+function Layers(){
+  const L = [
+    ["L7","体验层 Experience","web‑ui (Next.js 15 · React 19)","自然语言对话入口 · 结果与解释呈现"],
+    ["L6","HITL 层（人工参与）","Argilla","澄清 / 审批 / 反馈 → Golden Set 标注",false],
+    ["L5","编排层 Orchestration","LangGraph 状态机 · 8 节点 + 自愈","一个问题的完整旅程都在这里编排",true],
+    ["L4","能力层 Capability","LiteLLM · TEI · Presidio · OPA · sqlglot","模型 / 嵌入 / 脱敏 / 策略 / 校验 五种能力",true],
+    ["L3","知识层 Knowledge","pgvector · Schema Cards","把业务口径与表结构变成可检索的语义"],
+    ["L2","执行层 Execution","Trino 442 (over PostgreSQL)","只读副本 + 用户身份穿透 + 配额"],
+    ["L1","平台层 Platform","Langfuse · OPA 策略仓","Trace / Prompt / Eval · 策略即代码"],
+    ["L0","治理层 Governance","Prometheus · Grafana · Loki · Tempo · Portainer","指标 / 日志 / 分布式追踪 / 容器（可选）"],
+  ];
+  return (
+    <Stage kicker="What · 架构" title="八层架构：每层职责单一、可独立替换" en="8‑Layer Architecture">
+      <div className="col" style={{marginTop:2}}>
+        {L.map(([lx,nm,tech,msn,hot])=>(
+          <div className={"band"+(hot?" hot":"")} key={lx}>
+            <div className="lx">{lx}</div>
+            <div className="nm">{nm}</div>
+            <div className="tech">{tech}</div>
+            <div className="msn">{msn}</div>
+          </div>
+        ))}
+      </div>
+      <div className="row between center" style={{marginTop:12}}>
+        <div className="row gap8">
+          <span className="tag red">红色高亮 = 平台“大脑”：编排 + 能力</span>
+        </div>
+        <div style={{fontSize:12.5,color:"var(--muted)"}}>强制约束：只读 · 身份穿透 · 可审计 · 可替换 · TDD（测试驱动开发）先行</div>
+      </div>
+    </Stage>
+  );
+}
+
+// 6 — Service topology
+function Topology(){
+  const groups = [
+    ["状态与数据",["t2sql-pg-platform · 5432 · 平台元数据","t2sql-pg-cib · 5433 · 业务数据 + pgvector","t2sql-trino · 8081 · SQL 查询引擎"]],
+    ["模型与能力",["t2sql-litellm · 4000 · 模型网关 → OpenAI GPT","t2sql-tei-embed · 8082 · 文本向量化 bge","t2sql-presidio-analyzer/-anonymizer · 5001/5002 · PII（个人信息）脱敏","t2sql-opa · 8181 · 策略鉴权"]],
+    ["应用与体验",["t2sql-langgraph · 8080 · 核心 API（应用接口，8 节点管道）","t2sql-web-ui · 3203 · 用户界面"]],
+    ["可观测（内嵌/可选）",["t2sql-langfuse · 3202 · LLM（大模型）追踪 / 提示词 / 评测","Prometheus · Grafana · Loki · Tempo（obs 观测栈）"]],
+  ];
+  return (
+    <Stage kicker="What · 部署拓扑" title="默认栈：11 个容器，一条命令拉起" en="Topology">
+      <div className="row gap12" style={{marginBottom:12,alignItems:"center"}}>
+        <div className="code" style={{padding:"10px 16px",flex:"none"}}>
+          <span className="c"># PowerShell 一键启动</span>{"\n"}
+          <span className="k">.\t2sql.ps1</span> start min
+        </div>
+        <div className="grow" style={{fontSize:13.5,color:"var(--muted)"}}>
+          分层 compose：<span className="mono">00‑network → 10‑state → 20‑platform → 30‑data → 40‑capability → 50‑app</span>。
+          任一层可独立 up / down，互不影响。
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+        {groups.map(([g,items])=>(
+          <div className="card wash" key={g}>
+            <h4 style={{fontSize:15}}><span style={{width:8,height:8,borderRadius:2,background:"var(--red)",display:"inline-block"}}/>{g}</h4>
+            <div className="col gap8" style={{marginTop:10}}>
+              {items.map(it=>{
+                const [name,...rest]=it.split(" · ");
+                return <div key={it} style={{fontSize:12.8,color:"var(--ink-2)"}}>
+                  <span className="mono" style={{color:"var(--slate)",fontWeight:700}}>{name}</span>
+                  <span style={{color:"var(--muted)"}}> · {rest.join(" · ")}</span>
+                </div>;
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Stage>
+  );
+}
+
+// 7 — Section divider: The journey
+function SectionJourney(){
+  return (
+    <div className="divider">
+      <div className="dn">03</div>
+      <h2>一个问题的完整旅程</h2>
+      <p>跟随一位终端用户的问题，看它如何依次通过 <b>权限检查 · 语义解析 · 组织 SQL（结构化查询语言）· 语法校验 · 执行 · 结果分析</b> ——
+        六个关口，每一步都有明确的守卫与可审计的产物。</p>
+      <div className="row gap8" style={{marginTop:22}}>
+        {["① 权限","② 语义","③ SQL","④ 校验","⑤ 执行","⑥ 分析"].map(s=>
+          <span key={s} className="tag red" style={{fontSize:13,padding:"5px 12px"}}>{s}</span>)}
+      </div>
+    </div>
+  );
+}
+
+// 8 — Pipeline overview (redesigned: a plain-language 7-step journey)
+function Pipeline(){
+  // [color, step-no, plain title, tech node, one-line, right-chip, isRefuseGate, isLoopStep]
+  const steps = [
+    ["red","①","安全入口","pii_guard","拦截“提示注入”攻击，并给个人信息（PII）打码","命中即拒绝",true,false],
+    ["slate","②","找对表","schema_link","按语义找出最相关的业务表（RAG，检索增强生成）","只给相关表",false,false],
+    ["teal","③","写查询","sql_generate","GPT（OpenAI 大语言模型）按严格规则生成 SQL","只读·单条·限量",false,false],
+    ["ochre","④","查语法","sql_validate","用规则检查查询结构（AST，抽象语法树）","确定性底座",false,true],
+    ["red","①","授权闸门","opa_check","按“角色 × 表”鉴权；RM（客户经理）只看自己客户","越权即拒绝",true,false],
+    ["moss","⑤","取数据","execute","在只读数据库（Trino）上，用真实用户身份执行","身份穿透",false,false],
+    ["plum","⑥","讲人话","explain · output_mask","把结果翻成业务语言，出口再打一次码","可读的答案",false,false],
+  ];
+  return (
+    <Stage kicker="How · 总览" title="一次提问的七步旅程" en="How One Question Flows">
+      <div className="row between center" style={{marginBottom:8}}>
+        <span className="tag ink">起点：用自然语言提问</span>
+        <span style={{fontSize:12,color:"var(--muted)"}}>每步都有守卫，全程记录唯一追踪号（trace_id）</span>
+        <span className="tag" style={{background:"var(--moss-s)",color:"var(--moss)",borderColor:"transparent"}}>终点：可信答案</span>
+      </div>
+      <div className="col">
+        {steps.map(([c,num,title,node,desc,chip,gate,loop],i)=>(
+          <React.Fragment key={i}>
+            <div className="row center gap12" style={{padding:"6px 14px",borderRadius:9,background:"var(--"+c+"-s)",border:"1px solid var(--hair)"}}>
+              <div style={{width:30,height:30,borderRadius:"50%",flex:"none",background:"var(--"+c+")",color:"#fff",fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>{num}</div>
+              <div style={{width:92,flex:"none"}}>
+                <div style={{fontSize:15.5,fontWeight:700,color:"var(--ink)"}}>{title}</div>
+                <div className="mono" style={{fontSize:10,color:"var(--muted)"}}>{node}</div>
+              </div>
+              <div className="grow" style={{fontSize:13,color:"var(--ink-2)"}}>{desc}</div>
+              {loop && <span className="tag ochre" style={{flex:"none",fontSize:10.5}}>↺ 退回 ③ 重写</span>}
+              {gate && <span className="tag red" style={{flex:"none",fontSize:10.5}}>✕ 拒绝并留痕</span>}
+              <span className="tag" style={{flex:"none",background:"#fff",color:"var(--"+c+")",borderColor:"var(--"+c+")",fontSize:11,minWidth:74,justifyContent:"center"}}>{chip}</span>
+            </div>
+            {i<steps.length-1 && <div style={{textAlign:"center",color:"var(--faint)",fontSize:11,lineHeight:"13px"}}>↓</div>}
+          </React.Fragment>
+        ))}
+      </div>
+      <div className="row gap12" style={{marginTop:10}}>
+        <div style={{flex:1,padding:"8px 14px",borderRadius:8,background:"var(--ochre-s)",border:"1px solid #ecdcbf",fontSize:12,color:"var(--ink-2)"}}>
+          <b>↺ 自愈回环</b>：第 ④ 步语法不过关时，带着错误提示退回第 ③ 步重写，最多 N 次；仍不过关就拒绝。
+        </div>
+        <div style={{flex:1,padding:"8px 14px",borderRadius:8,background:"var(--red-s)",border:"1px solid #f2cfd2",fontSize:12,color:"var(--ink-2)"}}>
+          <b>✕ 双重权限把关</b>：第 ① 步与授权闸门两处拦截；命中即拒绝，但仍全程留痕、可审计。
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 9 — Stage ① Permission
+function StagePermission(){
+  return (
+    <Stage kicker="① 如何通过权限检查" title="纵深防御：三道关卡各司其职" en="Permission" tone="var(--red)">
+      <div className="row gap14" style={{alignItems:"stretch"}}>
+        <div className="card accent grow">
+          <h4><Icon name="shield" size={18}/>入口守卫 · pii_guard</h4>
+          <div className="col gap8" style={{marginTop:10}}>
+            <Li><b>注入检测</b>：识别“忽略以上指令 / 扮演某角色 / 试图篡改数据库 / 越狱”等攻击信号 → 立即拒答，绝不“悄悄执行”。</Li>
+            <Li><b>PII（个人身份信息）检测</b>：Presidio 识别 姓名 / 邮箱 / 信用卡 / 银行账号 / 证件号 等 → 先脱敏再进入，<b>个人信息永不进入 LLM（大语言模型）</b>。</Li>
+          </div>
+          <div className="row gap8" style={{marginTop:12}}><span className="tag red">REFUSED · PROMPT_INJECTION</span><span className="tag ink">脱敏后继续</span></div>
+        </div>
+        <div className="card accent grow">
+          <h4><Icon name="lock" size={18}/>授权闸门 · opa_check</h4>
+          <div className="col gap8" style={{marginTop:10}}>
+            <Li>在拿到<b>可信表清单</b>后运行（校验之后），用 <b>OPA（Open Policy Agent，开放策略引擎）</b> 判定 <span className="mono">角色 × 表</span>。</Li>
+            <Li><b>默认拒绝</b>（default deny）：只有命中角色白名单才放行，并返回 <span className="mono">matched_policy</span> + 原因。</Li>
+          </div>
+          <div className="row gap8" style={{marginTop:12}}><span className="tag red">REFUSED · OPA_DENIED</span><span className="tag slate">6 角色差异授权</span></div>
+        </div>
+      </div>
+      <div className="row gap14" style={{marginTop:14,alignItems:"stretch"}}>
+        <div className="card grow" style={{background:"var(--ink)",color:"#fff",border:"none",flex:1.3}}>
+          <h4 style={{color:"#fff"}}><Icon name="filter" size={18} color="#ff8b96"/>行级权限 · OPA obligation</h4>
+          <p style={{color:"#d9d9dc"}}>RM（客户经理）只能看自己名下客户：OPA 下发 <span className="mono" style={{color:"#ffb0b8"}}>row_filter（行级过滤）</span> 义务，
+            Python 用 <b>sqlglot</b> 把已校验 SQL 包一层 <span className="mono" style={{color:"#ffb0b8"}}>EXISTS</span> 半连接。</p>
+        </div>
+        <div className="code grow" style={{flex:1.7}}>
+<span className="c">-- 角色→表 白名单（节选自 text2sql.rego）</span>{"\n"}
+<span className="k">Ops</span>    : client, account, transaction, fx_rate …{"\n"}
+<span className="k">Compliance</span>: … + <span className="n">client_contact, rm_user</span>{"\n\n"}
+<span className="c">-- RM 行级义务被注入为半连接</span>{"\n"}
+SELECT _rf.* FROM (&lt;validated_sql&gt;) _rf{"\n"}
+WHERE EXISTS (SELECT 1 FROM client{"\n"}
+  WHERE client.cif_id=_rf.cif_id{"\n"}
+  AND <span className="s">client.rm_owner='alice@bank'</span>)
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 10 — Stage ② Semantic
+function StageSemantic(){
+  return (
+    <Stage kicker="② 如何遵循业务逻辑做语义解析" title="Schema 卡片 + 向量检索：把业务规则喂给模型" en="Semantic Linking" tone="var(--slate)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="col gap12 grow" style={{flex:1.05}}>
+          <div className="card"><h4><Icon name="link" size={18} color="var(--slate)"/>策展 Schema 卡片</h4>
+            <p>每张表一张“卡片”：<b>业务描述 + 列 + 关键 JOIN（表关联）提示</b>。业务口径直接写进卡片，模型不必猜。</p></div>
+          <div className="card"><h4><Icon name="route" size={18} color="var(--slate)"/>TEI（文本向量化）+ pgvector 检索</h4>
+            <p>问题先由 TEI（Text Embeddings Inference，文本向量化服务）转成向量 → 在 pgvector 向量库用近邻索引（HNSW）取最相关的前 K 张卡片，只把相关表交给模型。</p></div>
+          <div className="card"><h4><Icon name="refresh" size={18} color="var(--slate)"/>失败即降级</h4>
+            <p>检索不可用时回退全量卡片 —— <b>degraded, not broken</b>；<span className="mono">used_fallback</span> 记入 trace。</p></div>
+        </div>
+        <div className="card wash" style={{flex:1.15,display:"flex",flexDirection:"column"}}>
+          <div className="row between center"><h4 style={{fontSize:14.5}}>卡片示例：把 JOIN 规则固化进语义</h4><span className="tag slate">business logic</span></div>
+          <div className="code" style={{marginTop:10,fontSize:12.2,flex:1}}>
+<span className="n">Table country_ref</span>: ISO‑2 → 地区/AML 风险{"\n"}
+<span className="c">NOTE: risk_tier 在 country_ref，不在 client。</span>{"\n"}
+<span className="c">总是 client c JOIN country_ref cr</span>{"\n"}
+<span className="c">  ON c.country_iso = cr.country_iso</span>{"\n\n"}
+<span className="n">Table covenant</span>: 财务契约（DSCR/杠杆…）{"\n"}
+<span className="c">NOTE: covenant 没有 cif_id，取客户须</span>{"\n"}
+<span className="c">  经 exposure 中转：cov→exposure→client</span>{"\n\n"}
+<span className="n">Table exposure</span>: notional_usd / drawn_usd{"\n"}
+<span className="c">  / pd_bps —— 精确列名防止幻觉。</span>
+          </div>
+          <div style={{fontSize:12,color:"var(--muted)",marginTop:8}}>11 张 CIB（Corporate &amp; Institutional Banking，企业与机构银行）表卡片 = 语义层的单一事实源（语义检索命中率 ≥ 95%）。</div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 11 — Stage ③ SQL generation
+function StageGenerate(){
+  return (
+    <Stage kicker="③ 如何清晰地组织 SQL（结构化查询语言）" title="约束式提示 + 确定性生成" en="SQL Generation" tone="var(--teal)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="col gap12" style={{flex:1}}>
+          <div className="card"><h4><Icon name="code" size={18} color="var(--teal)"/>系统提示：强约束</h4>
+            <div className="col gap8" style={{marginTop:8}}>
+              <Li>只输出<b>单条 SELECT</b>，无散文、无注释、无 markdown。</Li>
+              <Li><b>只读</b>：禁 INSERT/UPDATE/DELETE/DDL/CALL/SET…</Li>
+              <Li>只引用<b>检索到的表</b>；强制 <span className="mono">LIMIT</span>；Trino ANSI SQL。</Li>
+            </div>
+          </div>
+          <div className="card"><h4><Icon name="spark" size={18} color="var(--teal)"/>OpenAI GPT · temperature 0（零温度）</h4>
+            <p>经 <b>LiteLLM 网关</b> 调用（<span className="mono">router/sql-gen</span>），零温度求确定性；
+              <b>出网仅此一条链路</b>，密钥集中在 <span className="mono">.env</span>。</p></div>
+          <div className="row gap8"><span className="tag teal">prompt_version: sql_generate@v1</span><span className="tag ink">token / cost 落 Langfuse</span></div>
+        </div>
+        <div className="code" style={{flex:1.2}}>
+<span className="c"># system prompt（节选）</span>{"\n"}
+You are a careful SQL assistant for a{"\n"}
+corporate banking analytics platform.{"\n\n"}
+Rules — violation ⇒ rejected:{"\n"}
+ 1. Output ONLY a single SQL <span className="k">SELECT</span>.{"\n"}
+ 2. Read‑only: no <span className="f">INSERT/UPDATE/DDL/CALL</span>.{"\n"}
+ 3. Reference ONLY the listed table(s).{"\n"}
+ 4. Always include an explicit <span className="k">LIMIT</span> (1000).{"\n"}
+ 5. ANSI SQL accepted by Trino.{"\n\n"}
+<span className="c"># + RAG 注入的表卡片</span>{"\n"}
+<span className="c"># + 若为重试：附上一轮的 violations 提示</span>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 12 — Stage ④ Validate + self-repair
+function StageValidate(){
+  return (
+    <Stage kicker="④ 如何确保语法正确" title="sqlglot 语法树（AST）校验：确定性安全底座" en="Validation + Self‑Repair" tone="var(--ochre)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="col gap12" style={{flex:1.05}}>
+          <div className="card"><h4><Icon name="check" size={18} color="var(--ochre)"/>纯 Python · 无网络 · 确定性</h4>
+            <div className="col gap8" style={{marginTop:8}}>
+              <Li>先解析成 <b>抽象语法树（AST）</b>；必须是单条、以 <b>SELECT（查询）</b> 为根。</Li>
+              <Li>禁止 <span className="mono">INSERT/UPDATE/DELETE/DROP/CREATE/ALTER/MERGE/CALL</span>（含嵌套子查询）。</Li>
+              <Li>表必须在 <b>11 张白名单</b> 内，否则 <span className="mono">table_not_allowed</span>。</Li>
+              <Li>无 LIMIT → 自动包子查询注入 <span className="mono">LIMIT 1000</span>。</Li>
+            </div>
+          </div>
+          <div className="card wash"><h4 style={{fontSize:14.5}}><Icon name="refresh" size={17} color="var(--ochre)"/>Self‑Repair 自愈回环</h4>
+            <p style={{marginTop:6}}>校验失败 → 把 <span className="mono">violations</span> 作为提示<b>回灌</b> sql_generate 重新生成（最多 N 次）；
+              仍不安全 → <span className="mono">REFUSED · SQL_UNSAFE</span>。指标 <span className="mono">self_repair_total</span> 可观测。</p></div>
+        </div>
+        <div className="col gap12" style={{flex:.95}}>
+          <div className="code" style={{flex:1}}>
+<span className="c"># 校验结果（SqlValidationResult）</span>{"\n"}
+{"{"}{"\n"}
+  <span className="n">"safe"</span>: <span className="k">true</span>,{"\n"}
+  <span className="n">"tables_used"</span>: [<span className="s">"client"</span>,<span className="s">"country_ref"</span>],{"\n"}
+  <span className="n">"violations"</span>: [],{"\n"}
+  <span className="n">"sql"</span>: <span className="s">"SELECT … LIMIT 1000"</span>{"\n"}
+{"}"}
+          </div>
+          <div className="row gap8" style={{flexWrap:"wrap"}}>
+            <span className="tag ochre">即使模型“乱来”…</span>
+            <span className="tag red">…这道底座也拦得住</span>
+          </div>
+          <div className="card" style={{background:"var(--ochre-s)",border:"1px solid #ecdcbf"}}>
+            <p style={{color:"var(--ink-2)",margin:0,fontSize:13.5}}><b>为什么放在这</b>：安全不依赖“模型良心”。
+              即便生成层被诱导，AST 校验器仍以规则挡住一切非 SELECT 与越权表。</p>
+          </div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 13 — Stage ⑤ Execute
+function StageExecute(){
+  return (
+    <Stage kicker="⑤ 如何得到结果" title="Trino 执行：身份穿透，不假冒" en="Execution" tone="var(--moss)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="col gap12" style={{flex:1}}>
+          <div className="card"><h4><Icon name="db" size={18} color="var(--moss)"/>身份穿透 Identity Passthrough</h4>
+            <p>执行时带上<b>真实用户身份</b>，而非用服务账号假冒 —— 执行层可据此做行/列权限与配额、并留下审计。</p>
+            <div className="col gap8" style={{marginTop:10}}>
+              <div className="kv"><span className="k">X‑Trino‑User</span><span className="v">alice@bank</span></div>
+              <div className="kv"><span className="k">X‑Trino‑Source</span><span className="v">text2sql / role=RM</span></div>
+              <div className="kv"><span className="k">X‑Trino‑Trace‑Token</span><span className="v">= trace_id</span></div>
+            </div>
+          </div>
+        </div>
+        <div className="col gap12" style={{flex:1}}>
+          <div className="card"><h4><Icon name="lock" size={18} color="var(--moss)"/>只读 + 配额</h4>
+            <p><b>Trino 442</b> over PostgreSQL（<span className="mono">cib.public</span>），走只读副本；
+              查询有超时与行数上限，<span className="mono">truncated</span> 标记透传给前端。</p></div>
+          <div className="card wash"><h4 style={{fontSize:14.5}}><Icon name="filter" size={17} color="var(--moss)"/>执行的是“被行级过滤后”的查询</h4>
+            <p style={{marginTop:6}}>若 OPA 下发了 RM（客户经理）行级义务，此处执行的已是包了 <span className="mono">EXISTS</span> 半连接的版本 ——
+              alice 无论怎么问，都只可能拿到自己名下客户的行。</p></div>
+          <div className="row gap8"><span className="tag moss">row_count · elapsed_ms 记入 span</span></div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 14 — Stage ⑥ Analyze
+function StageAnalyze(){
+  return (
+    <Stage kicker="⑥ 如何分析结果" title="业务化解释 + 出口二次脱敏" en="Explain + Mask" tone="var(--plum)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="card grow"><h4><Icon name="chart" size={18} color="var(--plum)"/>explain · 业务语言解释</h4>
+          <div className="col gap8" style={{marginTop:10}}>
+            <Li>用 GPT（OpenAI 大语言模型）生成 <b>1–2 句</b>业务解释：不复述 SQL、不臆造数字，只引用结果预览。</Li>
+            <Li><b>非阻塞</b>：解释失败也照常返回 SQL 与数据（<span className="mono">failed=true</span> 记录即可）。</Li>
+            <Li>仅把<b>列名 + 前几行</b>送模型，避免把整表明文再外发一次。</Li>
+          </div>
+          <div className="row gap8" style={{marginTop:12}}><span className="tag plum">generation: explain@v1</span><span className="tag ink">单独计费/延迟</span></div>
+        </div>
+        <div className="card grow"><h4><Icon name="shield" size={18} color="var(--plum)"/>output_mask · 出口脱敏</h4>
+          <div className="col gap8" style={{marginTop:10}}>
+            <Li>对结果<b>每个字符串单元 + 解释文本</b>再跑一遍 Presidio，命中即替换为 <span className="mono">&lt;PERSON&gt;</span> 等。</Li>
+            <Li><b>非阻塞、幂等</b>：Presidio 宕机则退到离线正则，绝不因脱敏失败而吞掉答案。</Li>
+            <Li>只记录<b>脱敏计数</b>（<span className="mono">cells_masked</span>）进 trace，从不回传原值。</Li>
+          </div>
+          <div className="row gap8" style={{marginTop:12}}><span className="tag red">入口 + 出口 = 双向 PII（个人信息）防护</span></div>
+        </div>
+      </div>
+      <div className="card wash" style={{marginTop:14,background:"var(--plum-s)",border:"1px solid #e4cfe2"}}>
+        <p style={{margin:0,fontSize:13.8,color:"var(--ink-2)"}}>
+          <b>终端用户看到的：</b>一段能读懂的结论 + 数据表；<b>平台留下的：</b>SQL、用到的表、脱敏计数、耗时、成本、trace_id —— 一次问答，两份价值。</p>
+      </div>
+    </Stage>
+  );
+}
+
+// 15 — Worked example (manager view)
+function Example(){
+  const steps = [
+    ["red","pii_guard","0 个 PII（个人信息） · 0 注入信号","PASS"],
+    ["slate","schema_link","Top‑2：client (0.82) · country_ref (0.76)","RAG"],
+    ["teal","sql_generate","SELECT c.cif_id, c.legal_name, c.aum_usd …","gen"],
+    ["ochre","sql_validate","safe · tables=[client,country_ref] · 注入 LIMIT","SAFE"],
+    ["red","opa_check","role=RM → allow · 义务 row_filter","ALLOW"],
+    ["red","row_filter","包 EXISTS：client.rm_owner='alice@bank'","注入"],
+    ["moss","execute","12 行 · 240ms · X‑Trino‑User=alice@bank","OK"],
+    ["plum","explain+mask","“共 12 家新加坡活跃客户…” · 脱敏 0 单元","OK"],
+  ];
+  return (
+    <Stage kicker="让管理者一眼看懂" title="完整实例：一个问题穿过全部关卡" en="Worked Example">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="col grow" style={{flex:1.35}}>
+          <div className="card wash" style={{padding:"12px 16px",marginBottom:10}}>
+            <div className="row between center">
+              <div style={{fontSize:15.5,fontWeight:700}}>“列出我在新加坡的活跃客户及其 AUM（管理资产规模）”</div>
+              <span className="tag red">终端用户视角</span>
+            </div>
+            <div className="row gap16" style={{marginTop:8,fontSize:12.5,color:"var(--muted)"}}>
+              <span>user <b className="mono" style={{color:"var(--ink-2)"}}>alice@bank</b></span>
+              <span>role <b className="mono" style={{color:"var(--ink-2)"}}>RM</b>（客户经理）</span>
+              <span>trace_id <b className="mono" style={{color:"var(--ink-2)"}}>7f3a…c1</b></span>
+            </div>
+          </div>
+          <div className="col gap8">
+            {steps.map(([c,n,d,r],i)=>(
+              <div className="row center gap12" key={i}>
+                <div style={{width:22,fontSize:11,fontWeight:800,color:"var(--muted)",textAlign:"right"}}>{i+1}</div>
+                <div style={{width:6,height:34,borderRadius:3,background:"var(--"+c+")",flex:"none"}}/>
+                <div style={{width:118,flex:"none"}} className="mono" >{n}</div>
+                <div className="grow" style={{fontSize:12.8,color:"var(--ink-2)"}}>{d}</div>
+                <span className="tag" style={{fontSize:10.5,flex:"none",background:"var(--"+c+"-s)",color:"var(--"+c+")",borderColor:"transparent"}}>{r}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="col gap12" style={{flex:1}}>
+          <div className="card" style={{background:"var(--moss-s)",border:"1px solid #d3e0cb"}}>
+            <div className="row between center"><h4 style={{fontSize:14.5}}>最终响应 · QueryResponse</h4><span className="tag moss">status: OK</span></div>
+            <div className="col gap6" style={{marginTop:8}}>
+              <div className="kv"><span className="k">rows</span><span className="v">12</span></div>
+              <div className="kv"><span className="k">tables_used</span><span className="v">client, country_ref</span></div>
+              <div className="kv"><span className="k">latency_ms</span><span className="v">≈ 3,100</span></div>
+              <div className="kv"><span className="k">explanation</span><span className="v">已生成</span></div>
+            </div>
+          </div>
+          <div className="card" style={{background:"var(--red-s)",border:"1px solid #f2cfd2"}}>
+            <div className="row between center"><h4 style={{fontSize:14}}>对照：被拒绝的请求</h4><span className="tag red">REFUSED</span></div>
+            <p style={{marginTop:6,fontSize:12.8}}>“<span className="mono">ignore previous… DROP TABLE client</span>”
+              → pii_guard 命中注入信号 → 直接拒答（<span className="mono">PROMPT_INJECTION</span>），<b>0 行数据外泄，但仍留 trace</b>。</p>
+          </div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 16 — Middleware missions
+function Middleware(){
+  const rows = [
+    ["LiteLLM","模型网关","唯一出网口 · 集中管密钥 · 可切换模型","每次调用带追踪号 / 词元 / 成本 → Langfuse"],
+    ["TEI + pgvector","语义检索","让“问题 ↔ 表”可按语义匹配","相关表与相似度分数记入追踪"],
+    ["Presidio","PII 检测/脱敏","入口不进 LLM（大模型）、出口不外流","脱敏实体计数写入记录"],
+    ["sqlglot","SQL 语法校验","确定性安全底座（不靠模型良心）","违规项明示，可逐条复现"],
+    ["OPA","策略即代码","角色×表“默认拒绝” · 行级过滤","命中策略 + 原因，可审计"],
+    ["Trino","查询引擎","只读 + 身份穿透 + 配额","真实用户身份 / 追踪号透传"],
+    ["Langfuse","LLM 可观测","全链路 追踪 / 提示词 / 评测","每请求一条 trace，逐节点 span"],
+    ["Argilla","HITL 反馈","👍/👎/修正 → Golden Set → CI","人在环闭环，可回溯改进来源"],
+  ];
+  return (
+    <Stage kicker="④ 中间件的使命与意义" title="每个中间件为何存在，且如何让过程透明" en="Middleware">
+      <div className="col" style={{marginTop:2}}>
+        <div className="row" style={{padding:"0 12px 8px",fontSize:11.5,color:"var(--faint)",fontWeight:700,letterSpacing:".04em",textTransform:"uppercase"}}>
+          <div style={{width:150}}>中间件</div><div style={{width:96}}>角色</div>
+          <div className="grow">使命与意义</div><div style={{width:330}}>如何让过程透明</div>
+        </div>
+        {rows.map(([m,r,mission,trans],i)=>(
+          <div className="row center" key={m} style={{padding:"9px 12px",borderTop:"1px solid var(--hair)",background:i%2?"var(--wash)":"#fff"}}>
+            <div style={{width:150,fontWeight:700,fontSize:14,color:"var(--ink)"}} className="mono">{m}</div>
+            <div style={{width:96}}><span className="tag ink" style={{fontSize:10.5}}>{r}</span></div>
+            <div className="grow" style={{fontSize:13,color:"var(--ink-2)",paddingRight:14}}>{mission}</div>
+            <div style={{width:330,fontSize:12.3,color:"var(--slate)"}}><Icon name="eye" size={13} color="var(--slate)"/> <span style={{verticalAlign:"middle"}}>{trans}</span></div>
+          </div>
+        ))}
+      </div>
+      <div style={{marginTop:12,padding:"9px 14px",borderRadius:8,background:"var(--wash)",border:"1px solid var(--hair)",fontSize:11.8,color:"var(--muted)"}}>
+        <b style={{color:"var(--ink-2)"}}>缩写速查：</b>PII 个人身份信息 · LLM 大语言模型 · OPA 开放策略引擎 · AST 抽象语法树 · TEI 文本向量化 · HITL 人工参与（Human-in-the-loop）· CI 持续集成
+      </div>
+    </Stage>
+  );
+}
+
+// 17 — Transparency / observability
+function Observability(){
+  return (
+    <Stage kicker="如何让过程透明清晰" title="一个 trace_id，串起全链路" en="Observability" tone="var(--slate)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="card grow" style={{flex:1.1}}>
+          <h4><Icon name="route" size={18} color="var(--slate)"/>trace_id（唯一追踪号）：强制贯穿每一跳</h4>
+          <p>入口生成 <span className="mono">trace_id</span>，随 HTTP header 传遍 LangGraph→LiteLLM→Trino→Presidio…
+            任何一层的日志、指标、追踪都可用它对齐。</p>
+          <div className="code" style={{marginTop:10,fontSize:12}}>
+<span className="c"># 逐节点 span（GraphState.spans）</span>{"\n"}
+pii_guard   ok    · 8ms   pii=0 injection=[]{"\n"}
+schema_link ok    · 41ms  fallback=false{"\n"}
+sql_generate ok   · 2.1s  tokens 420/86{"\n"}
+sql_validate ok   · 3ms   safe=true{"\n"}
+opa_check   ok    · 12ms  allow=true{"\n"}
+execute     ok    · 240ms rows=12{"\n"}
+explain+mask ok   · 0.6s  masked=0
+          </div>
+        </div>
+        <div className="col gap12" style={{flex:1}}>
+          <div className="card wash"><h4 style={{fontSize:14.5}}><Icon name="spark" size={17} color="var(--slate)"/>Langfuse</h4>
+            <p style={{marginTop:6}}>每次问答 = 一条 trace（追踪）+ 若干 generation（生成），含 提示词版本、词元用量、成本、每步耗时。</p></div>
+          <div className="card wash"><h4 style={{fontSize:14.5}}><Icon name="chart" size={17} color="var(--slate)"/>Prometheus 指标</h4>
+            <div className="row gap8" style={{marginTop:8,flexWrap:"wrap"}}>
+              {["requests_total","security_blocks_total","self_repair_total","latency_seconds"].map(m=>
+                <span key={m} className="tag slate" style={{fontSize:10.5}}>text2sql_{m}</span>)}
+            </div></div>
+          <div className="card wash"><h4 style={{fontSize:14.5}}><Icon name="eye" size={17} color="var(--slate)"/>Grafana · Loki · Tempo</h4>
+            <p style={{marginTop:6}}>4 角色大盘 + 结构化日志 + 分布式追踪（OTel，OpenTelemetry 标准）；管理者可从大盘一路下钻到单条 trace。</p></div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 18 — Security & SLO
+function Security(){
+  const controls = [
+    ["S1","SQL 注入/越权","语法树（AST）白名单 + 只读 + 强制行数上限"],
+    ["S3","PII 进/出","Presidio 入口 + 出口双向脱敏"],
+    ["S4","Prompt 注入","规则信号检测 → 直接拒答"],
+    ["S7","全链路审计","Langfuse 热存 + 归档 + Loki"],
+    ["S8","策略即代码","OPA text2sql 策略仓 + PR 评审"],
+    ["S6","模型出网收敛","仅 LiteLLM 一条出网链路"],
+  ];
+  const slo = [["100%","注入/越权拦截"],["≥99%","拒答精确率"],["≥95%","语义检索命中率"],["≤8s","P95（95分位）延迟"],["≤$0.02","单查询成本"],["115","测试通过"]];
+  return (
+    <Stage kicker="⑤ 安全 · 合规 · SLO（服务级目标）" title="安全从 Day 1 起就是硬约束" en="Security &amp; Governance" tone="var(--red)">
+      <div className="row gap16" style={{alignItems:"stretch"}}>
+        <div className="grow" style={{flex:1.15}}>
+          <div className="row between center" style={{marginBottom:10}}><h4 style={{fontSize:15}}>控制矩阵（节选）</h4><span className="tag ink">S1–S9</span></div>
+          <div className="col gap8">
+            {controls.map(([id,risk,ctrl])=>(
+              <div className="row center gap12" key={id} style={{padding:"9px 12px",border:"1px solid var(--hair)",borderRadius:8}}>
+                <span className="tag red" style={{flex:"none"}}>{id}</span>
+                <div style={{width:132,flex:"none",fontSize:13.5,fontWeight:700,color:"var(--ink)"}}>{risk}</div>
+                <div className="grow" style={{fontSize:12.8,color:"var(--muted)"}}>{ctrl}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{flex:.85}}>
+          <div className="row between center" style={{marginBottom:10}}><h4 style={{fontSize:15}}>工程 SLO（草案）</h4><span className="tag slate">目标</span></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            {slo.map(([n,l])=>(
+              <div className="card wash" key={l} style={{padding:"14px 16px"}}>
+                <div className="stat"><div className="n" style={{fontSize:28}}>{n}</div><div className="l">{l}</div></div>
+              </div>
+            ))}
+          </div>
+          <div className="card" style={{marginTop:10,background:"var(--ink)",color:"#fff",border:"none"}}>
+            <p style={{margin:0,color:"#e4c7ca",fontSize:13}}><b style={{color:"#fff"}}>TDD（测试驱动开发）先行</b> ——
+              任何 PR（代码合并请求）必须先有失败测试；安全红队用例 100% 必拦，否则不合并。</p>
+          </div>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+// 19 — Close
+function Close(){
+  return (
+    <div className="cover">
+      <div className="band-top"/>
+      <div className="cmain">
+        <div className="eyebrow"><Hex size={30}/> 开始使用</div>
+        <h1>安全、准确、可审计，<br/>而且<span className="accent">全程透明</span>。</h1>
+        <div className="row gap16" style={{marginTop:30,flexWrap:"wrap"}}>
+          <div className="card" style={{minWidth:300}}>
+            <h4 style={{fontSize:15}}><Icon name="bolt" size={17}/>一键启动</h4>
+            <div className="code" style={{marginTop:10,padding:"10px 14px"}}><span className="k">.\t2sql.ps1</span> start min</div>
+          </div>
+          <div className="card wash" style={{minWidth:360}}>
+            <h4 style={{fontSize:15}}><Icon name="route" size={17}/>访问入口</h4>
+            <div className="col gap6" style={{marginTop:8}}>
+              <div className="kv"><span className="k">Web UI 主界面</span><span className="v">http://localhost:3203</span></div>
+              <div className="kv"><span className="k">LangGraph API（应用接口）/ docs</span><span className="v">http://localhost:8080/docs</span></div>
+              <div className="kv"><span className="k">Langfuse Trace</span><span className="v">http://localhost:3202</span></div>
+            </div>
+          </div>
+        </div>
+        <div className="sub" style={{marginTop:26,fontSize:18}}>
+          问一个问题试试：<span className="mono" style={{color:"var(--red)"}}>“How many active clients are there?”</span></div>
+      </div>
+      <div className="cfoot">
+        <span className="row center" style={{gap:8}}><Hex size={16}/> Text2SQL Platform · CIB Data &amp; Analytics</span>
+        <span>谢谢 · Q &amp; A</span>
+      </div>
+    </div>
+  );
+}
+
+/* ===================== deck registry ===================== */
+const DECK = [
+  {k:"Cover",       t:"封面",              C:Cover},
+  {k:"Agenda",      t:"议程",              C:Agenda},
+  {k:"Why",         t:"业务痛点",          C:Pain},
+  {k:"Why",         t:"价值主张",          C:Value},
+  {k:"What",        t:"八层架构",          C:Layers},
+  {k:"What",        t:"服务拓扑",          C:Topology},
+  {k:"How",         t:"章节 · 问题的旅程",  C:SectionJourney},
+  {k:"How",         t:"七步旅程总览",       C:Pipeline},
+  {k:"① 权限",      t:"权限检查",          C:StagePermission},
+  {k:"② 语义",      t:"语义解析",          C:StageSemantic},
+  {k:"③ SQL",       t:"组织 SQL",          C:StageGenerate},
+  {k:"④ 校验",      t:"语法校验 + 自愈",    C:StageValidate},
+  {k:"⑤ 执行",      t:"得到结果",          C:StageExecute},
+  {k:"⑥ 分析",      t:"分析结果",          C:StageAnalyze},
+  {k:"实例",        t:"完整实例",          C:Example},
+  {k:"中间件",      t:"中间件使命",         C:Middleware},
+  {k:"透明",        t:"过程透明",          C:Observability},
+  {k:"安全",        t:"安全与 SLO",        C:Security},
+  {k:"Close",       t:"开始使用",          C:Close},
+];
+
+/* ===================== app shell ===================== */
+const ZH_DECK = "index.html", EN_DECK = "index.en.html";
+const IS_ZH = true;   // this file is the Chinese deck
+function readHashIndex(){
+  if (typeof location === "undefined") return 0;
+  const h = parseInt((location.hash || "").replace("#",""), 10);
+  return (Number.isInteger(h) && h >= 0 && h < DECK.length) ? h : 0;
+}
+
+function App(){
+  const total = DECK.length;
+  const [cur,setCur] = useState(readHashIndex);
+  const [scale,setScale] = useState(1);
+  const [ov,setOv] = useState(false);
+  const [hint,setHint] = useState(true);
+
+  const go = useCallback((n)=>setCur(c=>Math.max(0,Math.min(total-1, typeof n==="function"?n(c):n))),[total]);
+  const goLang = (file)=>{ if(typeof location!=="undefined") location.href = file + "#" + cur; };
+
+  useEffect(()=>{ if(typeof history!=="undefined"){ try{ history.replaceState(null,"","#"+cur); }catch(e){} } },[cur]);
+
+  useEffect(()=>{
+    const fit=()=>setScale(Math.min(window.innerWidth/1280, (window.innerHeight)/720));
+    fit(); window.addEventListener("resize",fit); return ()=>window.removeEventListener("resize",fit);
+  },[]);
+  useEffect(()=>{ const t=setTimeout(()=>setHint(false),4200); return ()=>clearTimeout(t); },[]);
+  useEffect(()=>{
+    const onKey=(e)=>{
+      if(e.key==="o"||e.key==="O"){ setOv(v=>!v); return; }
+      if(ov){ if(e.key==="Escape") setOv(false); return; }
+      if(["ArrowRight","PageDown"," ","Enter","l"].includes(e.key)){ e.preventDefault(); go(c=>c+1); }
+      else if(["ArrowLeft","PageUp","h"].includes(e.key)){ e.preventDefault(); go(c=>c-1); }
+      else if(e.key==="Home"){ go(0); }
+      else if(e.key==="End"){ go(total-1); }
+      else if(e.key==="f"||e.key==="F"){ if(!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+      else if(e.key==="t"||e.key==="T"){ goLang(IS_ZH?EN_DECK:ZH_DECK); }
+    };
+    window.addEventListener("keydown",onKey); return ()=>window.removeEventListener("keydown",onKey);
+  },[ov,go,total,cur]);
+
+  const Current = DECK[cur].C;
+  return (
+    <Deck.Provider value={{cur,total}}>
+      <div className="topbar"><i style={{width:((cur+1)/total*100)+"%"}}/></div>
+      <div className="backdrop">
+        <div className="stage" style={{transform:`translate(-50%,-50%) scale(${scale})`}}>
+          <div className="slide" key={cur}><Current/></div>
+        </div>
+      </div>
+
+      <div className="ui left">
+        <button className="btn circ" onClick={()=>go(c=>c-1)} title="上一页 (←)">‹</button>
+      </div>
+      <div className="ui right">
+        <div className="langtog" title="切换语言 · Language (T)">
+          <button className={IS_ZH?"on":""} onClick={()=>{ if(!IS_ZH) goLang(ZH_DECK); }}>中文</button>
+          <button className={!IS_ZH?"on":""} onClick={()=>{ if(IS_ZH) goLang(EN_DECK); }}>EN</button>
+        </div>
+        <span className="counter">{String(cur+1).padStart(2,"0")} / {total}</span>
+        <button className="btn" onClick={()=>setOv(true)} title="目录 (O)"><Icon name="gear" size={14} color="currentColor"/>目录</button>
+        <button className="btn" onClick={()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }} title="全屏 (F)">全屏</button>
+        <button className="btn circ" onClick={()=>go(c=>c+1)} title="下一页 (→)">›</button>
+      </div>
+
+      {hint && <div className="hint">← → 或空格翻页 · O 目录 · F 全屏 · T 中/EN 切换 · Home/End 首末页</div>}
+
+      {ov && (
+        <div className="ov" onClick={()=>setOv(false)}>
+          <h3><Hex size={22}/> Text2SQL Platform · 目录 <span className="x" onClick={()=>setOv(false)}>关闭 ✕</span></h3>
+          <div className="ovgrid" onClick={e=>e.stopPropagation()}>
+            {DECK.map((d,i)=>(
+              <div key={i} className={"ovc"+(i===cur?" on":"")} onClick={()=>{ go(i); setOv(false); }}>
+                <div className="oi">{String(i+1).padStart(2,"0")}</div>
+                <div className="ot">{d.t}</div>
+                <div className="ok">{d.k}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Deck.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
